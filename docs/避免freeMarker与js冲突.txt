@@ -1,0 +1,34 @@
+## 最佳实践建议
+
+1. **默认值处理**
+   - 总是为可能为空的FreeMarker变量设置默认值
+   - 使用 `!` 运算符提供默认值
+   ```javascript
+   <#assign myVar = someVar!'default'>
+   ```
+
+2. **类型转换**
+   - 使用适当的FreeMarker类型转换函数
+   - 布尔值使用 `?c`
+   - 字符串使用 `?js_string`
+   - JSON使用 `?json_string`
+
+3. **空值检查**
+   - 在使用变量前进行存在性检查
+   - 使用 `??>` 运算符
+   ```javascript
+   <#if (someVar)??>
+       // 使用 someVar
+   </#if>
+   ```
+
+4. **复杂表达式**
+   - 使用括号确保正确的求值顺序
+   - 例如：`((var)?js_string)!'default'`
+
+5. **调试技巧**
+   - 在开发时使用浏览器控制台检查生成的JavaScript代码
+   - 确保生成的代码语法正确
+   - 注意检查特殊字符的转义情况
+
+通过遵循这些最佳实践，可以有效避免FreeMarker和JavaScript的语法冲突，提高代码的可靠性和可维护性。

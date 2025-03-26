@@ -1,0 +1,94 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: 
+globs: 
+alwaysApply: false
+---
+{
+  "name": "广州民大融媒体网站项目",
+  "description": "基于Chestnut CMS的广州民大融媒体网站项目规则",
+  "rules": [
+    {
+      "name": "FreeMarker模板规则",
+      "description": "FreeMarker模板开发规范",
+      "patterns": ["**/*.ftl", "**/*.html"],
+      "guidelines": [
+        "使用<@cms_xxx>标签获取CMS数据，如<@cms_content>、<@cms_article>等",
+        "使用${变量}语法访问模板变量，如${content.title}",
+        "为可能为空的变量设置默认值，使用!运算符，如${content.title!'默认标题'}",
+        "使用<#list DataList as item>${item.name}</#list>遍历数据列表",
+        "使用<#if condition>...</#if>进行条件判断",
+        "使用<@page_bar>标签生成分页条",
+        "使用${dateFormat(content.publishDate,'yyyy-MM-dd')}格式化日期",
+        "使用${clearHtmlTag(content.description)}清除HTML标签",
+        "使用${internalUrl(content.redirectUrl)}或${iurl(content.redirectUrl)}解析内部链接"
+      ]
+    },
+    {
+      "name": "JavaScript与FreeMarker交互规则",
+      "description": "避免FreeMarker与JavaScript冲突的规则",
+      "patterns": ["**/*.ftl", "**/*.html", "**/*.js"],
+      "guidelines": [
+        "避免在JavaScript中使用反引号模板字符串，改用字符串连接",
+        "使用?js_string转义JavaScript中的FreeMarker变量，如var title = '${content.title?js_string}'",
+        "使用?c转换布尔值，如var isPublished = ${content.isPublished?c}",
+        "使用?json_string转换JSON数据，如var data = ${jsonData?json_string}",
+        "在使用变量前进行存在性检查，如<#if (someVar)??>...</#if>",
+        "不要混合FreeMarker和JavaScript更新同一内容",
+        "使用隐藏字段存储状态，如<input type='hidden' id='search-keyword' value='${keyword!''}'>"
+      ]
+    },
+    {
+      "name": "CMS模板函数使用规则",
+      "description": "CMS模板函数的正确使用方式",
+      "patterns": ["**/*.ftl", "**/*.html"],
+      "guidelines": [
+        "使用dealArticleBody处理文章正文内容，如${dealArticleBody(ArticleContent)}",
+        "使用videoPlayer处理视频内容，如${videoPlayer(content.videoHtml)}",
+        "使用imageSize处理图片缩放，如${imageSize(content.logo, 300, 300)}",
+        "使用sysConfig获取系统配置，如${sysConfig('SiteApiUrl')}",
+        "使用dict获取字典数据，如${dict('YesOrNo', 'Y')}",
+        "使用dynamicPageLink获取动态页面链接，如${dynamicPageLink('Search')}"
+      ]
+    },
+    {
+      "name": "动态模板页面规则",
+      "description": "系统动态模板页面的开发规则",
+      "patterns": ["**/*.ftl", "**/*.html"],
+      "guidelines": [
+        "搜索页面使用/_search路径，必须包含sid和pp参数",
+        "会员中心页面使用/account/{memberId}路径",
+        "会员设置页面使用/account/setting路径",
+        "会员登录页面使用/account/login路径",
+        "在客户端搜索实现中，使用隐藏字段存储状态",
+        "页面加载时立即从URL获取参数并存储",
+        "分离数据获取和UI更新逻辑"
+      ]
+    },
+    {
+      "name": "调试与测试规则",
+      "description": "项目调试和测试的最佳实践",
+      "patterns": ["**/*.ftl", "**/*.html", "**/*.js"],
+      "guidelines": [
+        "添加详细的调试信息，在页面中显示关键变量值和状态",
+        "使用console.log记录JavaScript执行过程",
+        "分步骤测试，先确保基本功能工作，再添加复杂特性",
+        "每解决一个问题后进行测试，避免多个问题叠加",
+        "在开发时使用浏览器控制台检查生成的JavaScript代码",
+        "确保生成的代码语法正确",
+        "注意检查特殊字符的转义情况"
+      ]
+    }
+  ]
+}
+
+在使用FreeMarker模板引擎开发网页时，容易出现FreeMarker表达式与JavaScript代码混淆的问题，主要原因有：
+语法冲突：FreeMarker和JavaScript都使用${...}语法来表示变量或表达式，当JavaScript中使用模板字符串（ES6特性，使用反引号`` 包裹）时，其中的${...}会被FreeMarker错误地解析为模板表达式。2. **执行时机不同**： - FreeMarker在服务器端执行，生成HTML - JavaScript在浏览器端执行3. **变量作用域隔离**：FreeMarker中定义的变量在JavaScript中不可直接访问，反之亦然。## 解决方案1. **避免在JavaScript中使用模板字符串**： ``javascript
+// 错误写法（在FreeMarker中会出问题）
+carousel.style.transform = translateX(-${currentIndex * itemWidth}px);
+// 正确写法
+carousel.style.transform = "translateX(-" + (currentIndex * itemWidth) + "px)";
