@@ -45,19 +45,24 @@
 ### CMSBackendContext
 
 - **定义**：后台预览模式下的链接前缀，例如 `http://localhost/dev-api/`
-- **用途**：用户上传的资源会生成一个iurl，然后iurl在后台预览模式下的链接前缀就是CMSBackendContext
-- **示例**：
-  - 图片上传后会根据CMSBackendContext生成后台的图片的前缀：`{CMSBackendContext}/preview/gzmdrw/resources/`
+- **用途**：用户上传的资源会生成一个 iurl，然后 iurl 在后台预览模式下的链接前缀就是 CMSBackendContext
+- **示例 1**：
+  - 图片上传后会根据 CMSBackendContext 生成后台的图片的前缀：`{CMSBackendContext}/preview/gzmdrw/resources/`
   - 从后端访问图片的真实地址示例：`http://localhost:8090/preview/gzmdrw/resources/image/2025/02/03/640837242351685.png`
+- **示例 2**：
+  - 模版中的"${Prefix}css/bootstrap.min.css"这个在后台预览模式下会变成"{CMSBackendContext}css/bootstrap.min.css"
+  - 而在用户访问的 shtml 中"${Prefix}css/bootstrap.min.css"会变成"/css/bootstrap.min.css"
 
 ### SiteApiUrl
 
 - **基本定义**：
+
   - 固定配置项，用于设置站点的 API 域名地址
   - 默认值为 `http://localhost:8080/`
   - 可以在后台管理系统中进行配置
 
 - **主要用途**：
+
   - 用于生成站点 API 访问地址
   - 在模板中作为全局变量使用
   - 用于自定义表单提交地址的生成
@@ -67,15 +72,18 @@
     ```html
     <!-- 模板中可以直接使用 ${apiPrefix} 变量 -->
     <script>
-    const apiUrl = '${apiPrefix}';  // 例如：http://localhost:8080/
+      const apiUrl = "${apiPrefix}"; // 例如：http://localhost:8080/
     </script>
     ```
   - 自定义表单提交：
     ```html
     <!-- 表单提交地址会自动使用 SiteApiUrl 配置 -->
     <form action="${apiPrefix}api/customform/submit" method="post">
-        <!-- 表单内容 -->
+      <!-- 表单内容 -->
     </form>
     ```
+  - 目前测试发现，在 chestnutcms1.5.0 的版本周"${apiPrefix}"并不可用，如果要用得写代码。
 
-## 项目中的坑与参数
+## 项目中的坑
+
+- **env 环境**：实际不论是 prod 还是 dev 环境，前端的 env 用的都是 env.dev

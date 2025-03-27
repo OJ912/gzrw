@@ -87,7 +87,8 @@ public class DirectPublicSearchController {
                                @RequestParam(value = "onlyTitle", required = false, defaultValue = "false") Boolean onlyTitle,
                                @RequestParam(value = "pageNum", required = false, defaultValue = "1") Integer pageNum,
                                @RequestParam(value = "pageSize", required = false, defaultValue = "6") Integer pageSize,
-                               @RequestParam(value = "contentType", required = false) String contentType) {
+                               @RequestParam(value = "contentType", required = false) String contentType,
+                               @RequestParam(value = "preview", required = false, defaultValue = "false") Boolean preview) {
         Map<String, Object> result = new HashMap<>();
         
         try {
@@ -191,11 +192,14 @@ public class DirectPublicSearchController {
                 // 转换内部URL为HTTP URL
                 if (item.containsKey("link") && item.get("link") != null && item.get("link").toString().startsWith("iurl://")) {
                     try {
-                        // 使用getActualUrl方法，获取实际发布的URL而不是预览URL
-                        // 假设默认发布管道为"html"，非预览模式
-                        String publishPipeCode = "html";
-                        boolean isPreview = false;
-                        String externalLink = InternalUrlUtils.getActualUrl(item.get("link").toString(), publishPipeCode, isPreview);
+                        String externalLink;
+                        if (preview) {
+                            // 预览模式下，使用getActualUrl方法，传入pc作为publishPipeCode
+                            externalLink = InternalUrlUtils.getActualUrl(item.get("link").toString(), "pc", true);
+                        } else {
+                            // 非预览模式下，使用getActualUrl方法
+                            externalLink = InternalUrlUtils.getActualUrl(item.get("link").toString(), "", false);
+                        }
                         
                         // 确保链接以"/"开头
                         if (!externalLink.startsWith("/") && !externalLink.startsWith("http://") && !externalLink.startsWith("https://") && !externalLink.equals("javascript:void(0);")) {
@@ -206,8 +210,6 @@ public class DirectPublicSearchController {
                     } catch (com.chestnut.contentcore.exception.InternalUrlParseException e) {
                         // 处理内部链接解析失败的情况（如链接指向的内容不存在）
                         item.put("link", "javascript:void(0);");
-                        // 可以考虑记录日志
-                        // log.warn("Failed to parse internal URL: " + item.get("link"), e);
                     } catch (Exception e) {
                         // 如果出现其他异常，使用默认空链接
                         item.put("link", "javascript:void(0);");
