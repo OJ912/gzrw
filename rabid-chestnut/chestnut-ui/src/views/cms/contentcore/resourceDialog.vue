@@ -330,11 +330,119 @@ export default {
       this.upload.fileList = fileList
     },
     handleFileBeforeUpload (file) {
+      console.log('[Debug] handleFileBeforeUpload - File received:', file.name, 'Size:', Math.round(file.size/1024), 'KB', 'Type:', file.type);
       if (this.upload.acceptSize > 0 && file.size > this.upload.acceptSize) {
         this.$message.error(this.$t('CMS.Resource.UploadFileSizeLimit', [ this.fileSizeName ]));
         return false;
       }
+
+      // 检查是否为图片文件
+      const isImage = file.type.startsWith('image/');
+      if (isImage) {
+        // 对大图片进行压缩处理
+        return new Promise((resolve, reject) => {
+          console.log('[Debug] Starting image processing promise');
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => {
+            console.log('[Debug] FileReader onload called');
+            const img = new Image();
+            img.src = reader.result;
+            img.onload = () => {
+              console.log('[Debug] Image loaded - Dimensions:', img.width, 'x', img.height);
+              // 检查图片宽度是否大于2560像素
+              if (img.width > 2560) {
+                console.log('[Debug] Image exceeds 2560px width, starting compression');
+                // 需要压缩
+                this.compressImage(file, img, 2560)
+                  .then(compressedFile => {
+                    console.log('[Debug] Compression successful - New file size:', Math.round(compressedFile.size/1024), 'KB', 'Original size:', Math.round(file.size/1024), 'KB');
+                    console.log('[Debug] Compression ratio:', Math.round(compressedFile.size / file.size * 100) + '%');
+                    
+                    // 显示压缩信息通知
+                    this.$notify({
+                      title: '图片已压缩',
+                      message: `图片宽度超过2560像素（原始宽度:${img.width}px），已自动压缩为2560像素宽`,
+                      type: 'info',
+                      duration: 5000
+                    });
+                    
+                    resolve(compressedFile);
+                  })
+                  .catch(error => {
+                    console.error('[Debug] Compression error:', error);
+                    this.$modal.msgError(`图片压缩失败: ${error.message}`);
+                    reject(error);
+                  });
+              } else {
+                console.log('[Debug] Image is under 2560px width, skipping compression');
+                // 不需要压缩，直接上传原图
+                resolve(file);
+              }
+            };
+            img.onerror = error => {
+              console.error('[Debug] Image load error:', error);
+              this.$modal.msgError("图片加载失败，请重试");
+              reject(error);
+            };
+          };
+          reader.onerror = error => {
+            console.error('[Debug] FileReader error:', error);
+            this.$modal.msgError("文件读取失败，请重试");
+            reject(error);
+          };
+        });
+      }
+
       return true;
+    },
+    // 压缩图片函数
+    compressImage(file, img, maxWidth) {
+      console.log('[Debug] compressImage called with maxWidth:', maxWidth);
+      return new Promise((resolve, reject) => {
+        try {
+          // 创建Canvas
+          const canvas = document.createElement('canvas');
+          
+          // 计算新的尺寸，保持宽高比
+          const aspectRatio = img.height / img.width;
+          const newWidth = maxWidth;
+          const newHeight = Math.round(newWidth * aspectRatio);
+          console.log('[Debug] Calculated new dimensions:', newWidth, 'x', newHeight, '(aspect ratio:', aspectRatio, ')');
+          
+          // 设置Canvas尺寸
+          canvas.width = newWidth;
+          canvas.height = newHeight;
+          
+          // 绘制图片到Canvas
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, newWidth, newHeight);
+          console.log('[Debug] Image drawn to canvas');
+          
+          // 转换为Blob
+          console.log('[Debug] Converting canvas to blob with type:', file.type);
+          canvas.toBlob(blob => {
+            if (!blob) {
+              console.error('[Debug] Canvas toBlob returned null');
+              reject(new Error('Canvas转换失败'));
+              return;
+            }
+            
+            console.log('[Debug] Blob created:', blob.type, '- Size:', Math.round(blob.size/1024), 'KB');
+            // 创建新的File对象
+            const compressedFile = new File([blob], file.name, {
+              type: file.type,
+              lastModified: Date.now()
+            });
+            
+            console.log('[Debug] Compressed File created:', compressedFile.name, '- Size:', Math.round(compressedFile.size/1024), 'KB');
+            resolve(compressedFile);
+          }, file.type, 0.92); // 使用较高的质量参数(0.92)以尽可能保留图片细节
+        } catch (error) {
+          console.error('[Debug] Error in compressImage function:', error);
+          reject(error);
+        }
+      });
     },
     handleFileUloadExceed (files, fileList) {
       this.$modal.msgWarning(this.$t('CMS.Resource.UploadLimit', [ this.upload.limit ]));

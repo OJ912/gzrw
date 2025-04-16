@@ -87,3 +87,8 @@
 ## 项目中的坑
 
 - **env 环境**：实际不论是 prod 还是 dev 环境，前端的 env 用的都是 env.dev
+
+## 安全相关
+
+- 密码相关设置（允许密码错误输入次数、输错密码的反应策略、对密码的要求）在 system_security_config 这张数据表里面
+- 关于 token 的过期时间和是否允许同时登录都在 application-dev.yml application-prod.yml 里面。
