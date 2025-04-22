@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chestnut.mailbox.mapper.PrincipalMailboxMapper">
+
+    <resultMap id="PrincipalMailboxVOResult" type="com.chestnut.mailbox.domain.vo.PrincipalMailboxVO">
+        <id property="id" column="id"/>
+        <result property="subject" column="subject"/>
+        <result property="name" column="name"/>
+        <result property="email" column="email"/>
+        <result property="phoneNumber" column="phone_number"/>
+        <result property="content" column="content"/>
+        <result property="createTime" column="create_time"/>
+        <result property="isReviewed" column="is_reviewed"/>
+    </resultMap>
+
+    <select id="selectMailboxPage" resultMap="PrincipalMailboxVOResult">
+        SELECT
+            id, subject, name, email, phone_number, content, create_time, is_reviewed
+        FROM
+            gzmdrw_xiaozhangxinxiang
+        <where>
+            <if test="dto.subject != null and dto.subject != ''">
+                AND subject LIKE CONCAT('%', #{dto.subject}, '%')
+            </if>
+            <if test="dto.name != null and dto.name != ''">
+                AND name LIKE CONCAT('%', #{dto.name}, '%')
+            </if>
+            <choose>
+                <when test="dto.queryType == 1">
+                    AND is_reviewed = false
+                </when>
+                <when test="dto.queryType == 2">
+                    AND is_reviewed = true
+                </when>
+                <otherwise>
+                    <if test="dto.isReviewed != null">
+                        AND is_reviewed = #{dto.isReviewed}
+                    </if>
+                </otherwise>
+            </choose>
+        </where>
+        ORDER BY id DESC
+    </select>
+
+</mapper> 

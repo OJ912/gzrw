@@ -1,0 +1,33 @@
+# Add directories or file patterns to ignore during indexing (e.g. foo/ or *.csv)
+
+# 忽略构建输出目录
+build/
+dist/
+out/
+.output/
+sql/
+
+# 忽略依赖目录
+node_modules/
+vendor/
+.venv/
+__pycache__/
+
+# 忽略大型数据文件
+# 忽略日志文件
+*.log
+logs/
+
+# 忽略临时文件
+.tmp/
+.cache/
+.DS_Store
+
+# 忽略配置文件和密钥
+.env
+.env.local
+secrets.json
+
+# 忽略特定的大型目录
+large_assets/
+datasets/
