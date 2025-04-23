@@ -97,7 +97,16 @@ public class RedisSetPublishStrategy implements IPublishStrategy, CommandLineRun
 
                                 IStaticizeType staticizeType = cmsStaticizeService.getStaticizeType(dataType);
                                 if (Objects.nonNull(staticizeType)) {
-                                    staticizeType.staticize(dataId);
+                                    try {
+                                        // 设置异步上下文标志，用于绕过SaToken权限验证
+                                        com.chestnut.common.security.util.SaTokenSecurityAsyncUtils.setupSaTokenAsyncContext();
+
+                                        // 执行静态化操作
+                                        staticizeType.staticize(dataId);
+                                    } finally {
+                                        // 清除异步上下文标志
+                                        com.chestnut.common.security.util.SaTokenSecurityAsyncUtils.clearSaTokenAsyncContext();
+                                    }
                                 }
                             }
                         } catch (Exception e) {

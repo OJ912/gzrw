@@ -26,7 +26,7 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
  * @email 190785909@qq.com
  */
 @SpringBootApplication
-public class ChestnutApplication {
+public class  ChestnutApplication {
 	
 	public static void main(String[] args) {
 		long s = System.currentTimeMillis();

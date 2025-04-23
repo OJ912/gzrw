@@ -19,9 +19,14 @@ chestnut:
     uploadPath: "D:/dev/workspace_chestnut/_xy_member/"
   cms:
     publish:
+      strategy: ThreadPool
       pool:
         threadNamePrefix: "CMS-PUBLISH-"
-        queueCapacity: 10000
+        queueCapacity: 20000
+        coreSize: 4
+        maxSize: 8
+        allowCoreThreadTimeout: true
+        keepAlive: 120s
 
 # 开发环境配置
 server:

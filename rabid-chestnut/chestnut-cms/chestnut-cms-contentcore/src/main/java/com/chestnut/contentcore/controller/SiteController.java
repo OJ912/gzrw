@@ -21,6 +21,7 @@ import com.chestnut.common.async.AsyncTask;
 import com.chestnut.common.async.AsyncTaskManager;
 import com.chestnut.common.domain.R;
 import com.chestnut.common.exception.CommonErrorCode;
+import com.chestnut.common.i18n.I18nUtils;
 import com.chestnut.common.log.annotation.Log;
 import com.chestnut.common.log.enums.BusinessType;
 import com.chestnut.common.security.anno.Priv;
@@ -42,6 +43,7 @@ import com.chestnut.contentcore.service.ICatalogService;
 import com.chestnut.contentcore.service.IPublishPipeService;
 import com.chestnut.contentcore.service.IPublishService;
 import com.chestnut.contentcore.service.ISiteService;
+import com.chestnut.contentcore.service.impl.PublishServiceImpl;
 import com.chestnut.contentcore.service.impl.SiteThemeService;
 import com.chestnut.contentcore.util.ConfigPropertyUtils;
 import com.chestnut.contentcore.util.InternalUrlUtils;
@@ -61,10 +63,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * 站点管理
@@ -230,16 +234,58 @@ public class SiteController extends BaseRestController {
     @Priv(type = AdminUserType.TYPE, value = "Site:Publish:${#dto.siteId}")
     @Log(title = "发布站点", businessType = BusinessType.OTHER)
     @PostMapping("/publish")
-    public R<String> publishAll(@RequestBody @Validated PublishSiteDTO dto) throws IOException, TemplateException {
+    public R<Map<String, Object>> publishAll(@RequestBody @Validated PublishSiteDTO dto) throws IOException, TemplateException {
         CmsSite site = siteService.getById(dto.getSiteId());
         Assert.notNull(site, () -> CommonErrorCode.DATA_NOT_FOUND_BY_ID.exception("siteId", dto.getSiteId()));
 
         if (!dto.isPublishIndex()) {
-            AsyncTask task = publishService.publishAll(site, dto.getContentStatus(), StpAdminUtil.getLoginUser());
-            return R.ok(task.getTaskId());
+            // 创建任务ID以便跟踪进度
+            String taskId = "SitePublish_" + UUID.randomUUID().toString();
+            
+            // 调用增强版发布方法，传入任务ID
+            AsyncTask task = publishService instanceof PublishServiceImpl
+                ? ((PublishServiceImpl) publishService).publishAll(site, dto.getContentStatus(), StpAdminUtil.getLoginUser(), taskId)
+                : publishService.publishAll(site, dto.getContentStatus(), StpAdminUtil.getLoginUser());
+            
+            // 返回Map包含任务ID和站点信息
+            Map<String, Object> result = new HashMap<>();
+            result.put("taskId", taskId);
+            result.put("siteName", site.getName());
+            
+            return R.ok(result);
         }
         publishService.publishSiteIndex(site);
-        return R.ok();
+        return R.ok(new HashMap<>());
+    }
+
+    /**
+     * 发布待发布状态的内容
+     */
+    @Priv(type = AdminUserType.TYPE, value = "Site:Publish:${#dto.siteId}")
+    @Log(title = "发布待发布内容", businessType = BusinessType.OTHER)
+    @PostMapping("/publish/topublish")
+    public R<Map<String, Object>> publishToPublishContents(@RequestBody @Validated PublishSiteDTO dto) throws IOException, TemplateException {
+        CmsSite site = siteService.getById(dto.getSiteId());
+        Assert.notNull(site, () -> CommonErrorCode.DATA_NOT_FOUND_BY_ID.exception("siteId", dto.getSiteId()));
+
+        // 创建任务ID以便跟踪进度
+        String taskId = "SitePublishToPublish_" + UUID.randomUUID().toString();
+        
+        // 设置强制发布待发布内容
+        dto.setContentStatus(com.chestnut.contentcore.fixed.dict.ContentStatus.TO_PUBLISHED);
+        
+        // 调用增强版发布方法，传入任务ID
+        AsyncTask task = publishService instanceof PublishServiceImpl
+            ? ((PublishServiceImpl) publishService).publishAll(site, dto.getContentStatus(), StpAdminUtil.getLoginUser(), taskId)
+            : publishService.publishAll(site, dto.getContentStatus(), StpAdminUtil.getLoginUser());
+        
+        // 返回Map包含任务ID和站点信息
+        Map<String, Object> result = new HashMap<>();
+        result.put("taskId", taskId);
+        result.put("siteName", site.getName());
+        result.put("contentStatus", dto.getContentStatus());
+        
+        return R.ok(result);
     }
 
     /**

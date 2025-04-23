@@ -101,6 +101,19 @@ export const constantRoutes = [
     hidden: true,
     name: "ContentCorePreview",
   },
+  // 以下两个路由暂时被注释，因为对应的视图组件不存在
+  // {
+  //   path: "/cms/publishDebug",
+  //   component: () => import("@/views/cms/contentcore/publishDebug"),
+  //   hidden: true,
+  //   name: "PublishDebug",
+  // },
+  // {
+  //   path: "/cms/publishTest",
+  //   component: () => import("@/views/cms/contentcore/publishTest"),
+  //   hidden: true,
+  //   name: "PublishTest",
+  // },
   {
     path: "/cms/content/editorW",
     component: () => import("@/views/cms/contentcore/contentEditor"),

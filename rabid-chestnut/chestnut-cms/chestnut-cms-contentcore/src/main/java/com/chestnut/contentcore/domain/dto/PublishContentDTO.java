@@ -30,4 +30,9 @@ public class PublishContentDTO {
 	 */
 	@NotEmpty
 	private List<Long> contentIds;
+	
+	/**
+	 * 任务ID，用于跟踪发布进度
+	 */
+	private String taskId;
 }

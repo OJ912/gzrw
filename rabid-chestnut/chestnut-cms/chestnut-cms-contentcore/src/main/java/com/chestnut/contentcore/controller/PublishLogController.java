@@ -28,14 +28,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 发布日志管理
- * 
+ *
  * @author 兮玥
  * @email 190785909@qq.com
  */
 @Priv(type = AdminUserType.TYPE)
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/cms/publish/")
+@RequestMapping("/cms/publish/log")
 public class PublishLogController extends BaseRestController {
 
 	private final IPublishStrategy publishStrategy;
@@ -43,9 +43,25 @@ public class PublishLogController extends BaseRestController {
 	/**
 	 * 发布队列任务数量
 	 */
-	@GetMapping("/taskCount")
+	@GetMapping("/count")
 	public R<?> getPublishTaskCount() {
 		return R.ok(publishStrategy.getTaskCount());
+	}
+
+	/**
+	 * 测试添加发布任务
+	 */
+	@Priv(type = AdminUserType.TYPE)
+	@GetMapping("/test")
+	public R<?> testAddTask() {
+		try {
+			// 使用站点发布类型
+			publishStrategy.publish("site", "test-" + System.currentTimeMillis());
+			return R.ok(publishStrategy.getTaskCount());
+		} catch (Exception e) {
+			e.printStackTrace();
+			return R.fail("添加测试任务失败: " + e.getMessage());
+		}
 	}
 
 	/**

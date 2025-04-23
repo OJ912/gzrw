@@ -77,8 +77,51 @@ public class ContentStaticizeType implements IStaticizeType {
         if (IdUtils.validate(contentId)) {
             CmsContent content = this.contentService.dao().getById(contentId);
             if (Objects.nonNull(content)) {
+                // 先删除旧的静态文件，强制重新生成
+                deleteStaticFile(content);
+                // 生成静态页
                 this.contentStaticize(content);
             }
+        }
+    }
+
+    /**
+     * 删除内容的静态文件，强制下次重新生成
+     * 
+     * @param content 内容对象
+     */
+    private void deleteStaticFile(CmsContent content) {
+        try {
+            CmsSite site = this.siteService.getSite(content.getSiteId());
+            CmsCatalog catalog = this.catalogService.getCatalog(content.getCatalogId());
+            if (catalog == null || !catalog.isStaticize() || content.isLinkContent()) {
+                return; // 不需要静态化的内容跳过
+            }
+            
+            List<CmsPublishPipe> publishPipes = this.publishPipeService.getPublishPipes(content.getSiteId());
+            for (CmsPublishPipe pp : publishPipes) {
+                // 删除内容静态页
+                String siteRoot = SiteUtils.getSiteRoot(site, pp.getCode());
+                String path = siteRoot + catalog.getPath() + content.getContentId() + ".shtml";
+                File file = new File(path);
+                if (file.exists()) {
+                    logger.info("删除旧静态文件: {}", path);
+                    file.delete();
+                }
+                
+                // 内容可能有多个分页，尝试删除其他分页文件
+                for (int i = 1; i <= 10; i++) {
+                    String pagePath = siteRoot + catalog.getPath() + content.getContentId() + "_" + i + ".shtml";
+                    File pagefile = new File(pagePath);
+                    if (pagefile.exists()) {
+                        pagefile.delete();
+                    } else {
+                        break; // 一旦发现不存在的页面，认为后续也不存在，跳出循环
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("删除内容静态文件失败: " + content.getTitle(), e);
         }
     }
 

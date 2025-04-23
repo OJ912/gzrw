@@ -73,7 +73,18 @@ public class AsyncTaskManager {
 	 * 提交异步任务
 	 */
 	public void execute(Runnable runnable) {
-		this.taskExecutor.execute(runnable);
+		this.taskExecutor.execute(() -> {
+			try {
+				// 设置异步上下文标志
+				SecurityAsyncUtils.setupAsyncContext();
+
+				// 执行任务
+				runnable.run();
+			} finally {
+				// 清除异步上下文标志
+				SecurityAsyncUtils.clearAsyncContext();
+			}
+		});
     }
 
     /**
@@ -121,7 +132,7 @@ public class AsyncTaskManager {
 			task.interrupt();
 		}
 	}
-    
+
     /**
      * 获取线程池信息
      */
@@ -132,11 +143,11 @@ public class AsyncTaskManager {
     protected static void setCurrent(AsyncTask task) {
 		CURRENT.set(task);
     }
-    
+
     protected static void removeCurrent() {
 		CURRENT.remove();
     }
-    
+
     public static void checkInterrupt() throws InterruptedException {
 		AsyncTask task = CURRENT.get();
 		if (Objects.nonNull(task)) {
@@ -151,14 +162,14 @@ public class AsyncTaskManager {
 		}
 		return message;
     }
-    
+
     public static void setTaskPercent(int percent) {
 		AsyncTask task = CURRENT.get();
 		if (Objects.nonNull(task)) {
 			task.setPercent(percent);
 		}
     }
-    
+
     public static void setTaskMessage(String msg) {
 		AsyncTask task = CURRENT.get();
 		if (Objects.nonNull(task)) {

@@ -46,6 +46,7 @@ import com.chestnut.contentcore.service.ICatalogService;
 import com.chestnut.contentcore.service.IContentService;
 import com.chestnut.contentcore.service.IPublishService;
 import com.chestnut.contentcore.service.ISiteService;
+import com.chestnut.contentcore.service.impl.PublishServiceImpl;
 import com.chestnut.contentcore.user.preference.IncludeChildContentPreference;
 import com.chestnut.contentcore.user.preference.ShowContentSubTitlePreference;
 import com.chestnut.contentcore.util.CmsPrivUtils;
@@ -67,10 +68,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 内容管理控制器
@@ -339,5 +338,59 @@ public class ContentController extends BaseRestController {
 			this.contentService.dao().lambdaUpdate().set(CmsContent::getAttributes, attributes).eq(CmsContent::getContentId, content.getContentId()).update();
 		});
 		return R.ok();
+	}
+
+	/**
+	 * 批量发布待发布状态的内容
+	 */
+	@Log(title = "批量发布待发布内容", businessType = BusinessType.OTHER)
+	@PostMapping("/publish/topublish")
+	public R<Map<String, Object>> publishToPublishContents(@RequestBody @Validated PublishContentDTO publishContentDTO) throws TemplateException, IOException {
+		// 创建任务ID以便跟踪进度
+		String taskId = "ContentToPublishBatch_" + UUID.randomUUID().toString();
+		LoginUser loginUser = StpAdminUtil.getLoginUser();
+		
+		// 如果指定了特定内容ID列表，则直接发布这些内容
+		if (publishContentDTO.getContentIds() != null && !publishContentDTO.getContentIds().isEmpty()) {
+			// 确保所有内容都有发布权限
+			for (Long contentId : publishContentDTO.getContentIds()) {
+				CmsContent content = contentService.dao().getById(contentId);
+				if (content != null) {
+					PermissionUtils.checkPermission(CatalogPrivItem.Publish.getPermissionKey(content.getCatalogId()), loginUser);
+				}
+			}
+			
+			// 调用发布服务发布内容 - 使用增强版发布方法确保生成静态文件
+			if (publishService instanceof PublishServiceImpl) {
+				((PublishServiceImpl) publishService).publishToPublishContent(publishContentDTO.getContentIds(), loginUser, taskId);
+			} else {
+				publishService.publishContent(publishContentDTO.getContentIds(), loginUser);
+			}
+		} else {
+			// 没有指定内容ID，获取所有待发布状态的内容
+			CmsSite site = this.siteService.getCurrentSite(ServletUtils.getRequest());
+			List<Long> toPublishContentIds = contentService.dao().lambdaQuery()
+				.eq(CmsContent::getSiteId, site.getSiteId())
+				.eq(CmsContent::getStatus, com.chestnut.contentcore.fixed.dict.ContentStatus.TO_PUBLISHED)
+				.list()
+				.stream()
+				.map(CmsContent::getContentId)
+				.collect(Collectors.toList());
+			
+			if (!toPublishContentIds.isEmpty()) {
+				if (publishService instanceof PublishServiceImpl) {
+					((PublishServiceImpl) publishService).publishContent(toPublishContentIds, loginUser, taskId);
+				} else {
+					publishService.publishContent(toPublishContentIds, loginUser);
+				}
+			}
+		}
+		
+		// 返回任务ID和内容信息
+		Map<String, Object> result = new HashMap<>();
+		result.put("taskId", taskId);
+		result.put("status", com.chestnut.contentcore.fixed.dict.ContentStatus.TO_PUBLISHED);
+		
+		return R.ok(result);
 	}
 }

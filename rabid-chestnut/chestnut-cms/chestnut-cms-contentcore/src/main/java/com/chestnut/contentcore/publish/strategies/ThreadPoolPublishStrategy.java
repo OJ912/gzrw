@@ -56,7 +56,18 @@ public class ThreadPoolPublishStrategy implements IPublishStrategy, CommandLineR
     public void publish(String dataType, String dataId) {
         IStaticizeType staticizeType = cmsStaticizeService.getStaticizeType(dataType);
         if (Objects.nonNull(staticizeType)) {
-            threadPoolTaskExecutor.execute(() -> staticizeType.staticize(dataId));
+            threadPoolTaskExecutor.execute(() -> {
+                try {
+                    // 设置异步上下文标志，用于绕过SaToken权限验证
+                    com.chestnut.common.security.util.SaTokenSecurityAsyncUtils.setupSaTokenAsyncContext();
+
+                    // 执行静态化操作
+                    staticizeType.staticize(dataId);
+                } finally {
+                    // 清除异步上下文标志
+                    com.chestnut.common.security.util.SaTokenSecurityAsyncUtils.clearSaTokenAsyncContext();
+                }
+            });
         }
     }
 

@@ -27,6 +27,7 @@ import freemarker.template.TemplateException;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public interface IPublishService {
 
@@ -151,4 +152,43 @@ public interface IPublishService {
      * @param pageWidget
      */
     void pageWidgetStaticize(IPageWidget pageWidget);
+
+    /**
+     * 检查发布状态
+     * 检查站点下所有已发布内容对应的shtml文件是否存在
+     * 
+     * @param siteId 站点ID
+     * @return 返回未成功发布的内容列表
+     */
+    List<Map<String, Object>> checkPublishStatus(Long siteId);
+
+    /**
+     * 获取任务详情
+     * 
+     * @param taskId 任务ID
+     * @return 任务详情
+     */
+    Map<String, Object> getTaskDetails(String taskId);
+    
+    /**
+     * 取消发布任务
+     * 
+     * @param taskId 任务ID
+     * @return 取消结果
+     */
+    boolean cancelTask(String taskId);
+    
+    /**
+     * 获取所有活动的发布任务
+     * 
+     * @return 活动任务列表
+     */
+    List<Map<String, Object>> getActiveTasks();
+    
+    /**
+     * 清空发布任务队列
+     * 
+     * @return 操作结果
+     */
+    boolean clearPublishTasks();
 }

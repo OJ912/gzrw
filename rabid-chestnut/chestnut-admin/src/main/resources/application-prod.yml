@@ -16,15 +16,18 @@ chestnut:
     # 验证码类型 math 数组计算 char 字符验证
     captchaType: math
   freemarker:
-    templateLoaderPath: C:\gzmdrw_site_master\wwwroot_release
+    templateLoaderPath: D:\item\guanwang\gzmdrw_site_james\wwwroot_release
   cms:
-    resourceRoot: C:\gzmdrw_site_master\wwwroot_release
+    resourceRoot: D:\item\guanwang\gzmdrw_site_james\wwwroot_release
     publish:
+      strategy: ThreadPool
       pool:
         threadNamePrefix: "CMS-PUBLISH-"
-        queueCapacity: 10000
-        coreSize: 2
-        maxSize: 4
+        queueCapacity: 20000
+        coreSize: 4
+        maxSize: 8
+        allowCoreThreadTimeout: true
+        keepAlive: 120s
 
 # 开发环境配置
 server:
@@ -72,6 +75,8 @@ spring:
     check-template-location: false
   elasticsearch:
     uris: http://127.0.0.1:9200
+    username: elastic
+    password: 123456
   # redis 配置
   data:
     redis:
@@ -188,7 +193,7 @@ spring:
         url: http://127.0.0.1:9080/admin
         instance:
           service-host-type: IP
-        username: chestnut
+        username: elastic
         password: 123456
 
 # SaToken配置

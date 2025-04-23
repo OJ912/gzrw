@@ -162,12 +162,15 @@ public class ContentIndexService implements CommandLineRunner {
 	public void createContentDoc(IContent<?> content) {
 		CmsSite site = siteService.getSite(content.getSiteId());
 		createIndex(site);
+		
 		// 判断栏目/站点配置是否生成索引
 		String enableIndex = EnableIndexProperty.getValue(content.getCatalog().getConfigProps(),
 				content.getSite().getConfigProps());
+		
 		if (YesOrNo.isNo(enableIndex)) {
 			return;
 		}
+		
 		try {
 			esClient.update(fn -> fn
 					.index(CmsSearchConstants.indexName(content.getSiteId().toString()))
@@ -315,10 +318,27 @@ public class ContentIndexService implements CommandLineRunner {
 		data.put("editor", content.getContentEntity().getEditor());
 		data.put("keywords", content.getContentEntity().getKeywords());
 		data.put("tags", content.getContentEntity().getTags());
-		data.put("createTime", content.getContentEntity().getCreateTime().toEpochSecond(ZoneOffset.UTC));
+		
+		// Add null check for createTime
+		LocalDateTime createTime = content.getContentEntity().getCreateTime();
+		if (createTime != null) {
+			data.put("createTime", createTime.toEpochSecond(ZoneOffset.UTC));
+		} else {
+			data.put("createTime", LocalDateTime.now().toEpochSecond(ZoneOffset.UTC));
+		}
+		
 		data.put("logo", content.getContentEntity().getLogo());
 		data.put("status", content.getContentEntity().getStatus());
-		data.put("publishDate", content.getContentEntity().getPublishDate().toEpochSecond(ZoneOffset.UTC));
+		
+		// Add null check for publishDate
+		LocalDateTime publishDate = content.getContentEntity().getPublishDate();
+		if (publishDate != null) {
+			data.put("publishDate", publishDate.toEpochSecond(ZoneOffset.UTC));
+		} else {
+			// If publishDate is null, use current time as fallback
+			data.put("publishDate", LocalDateTime.now().toEpochSecond(ZoneOffset.UTC));
+		}
+		
 		data.put("link", InternalUrlUtils.getInternalUrl(InternalDataType_Content.ID, content.getContentEntity().getContentId()));
 		data.put("title", content.getContentEntity().getTitle());
 		data.put("summary", content.getContentEntity().getSummary());
@@ -343,6 +363,61 @@ public class ContentIndexService implements CommandLineRunner {
 			return esClient.ping().value();
 		} catch (Exception e) {
 			return false;
+		}
+	}
+
+	/**
+	 * 检查内容是否在索引中存在
+	 * 
+	 * @param siteId 站点ID
+	 * @param contentId 内容ID
+	 * @return 是否存在
+	 */
+	public boolean existsInIndex(Long siteId, Long contentId) {
+		try {
+			CmsSite site = siteService.getSite(siteId);
+			createIndex(site);
+			return this.esClient.exists(fn -> fn
+					.index(CmsSearchConstants.indexName(siteId.toString()))
+					.id(contentId.toString())).value();
+		} catch (Exception e) {
+			log.error("Check content exists in index failed: {}", contentId, e);
+			return false;
+		}
+	}
+
+	/**
+	 * 根据内容状态处理索引
+	 * 根据不同状态处理内容在索引中的表现：
+	 * - 已发布状态：创建或更新索引
+	 * - 下线状态：从索引中删除
+	 * - 其他状态(待发布/草稿/编辑中)：保留在索引中，仅更新状态字段
+	 * 
+	 * @param content 内容对象
+	 */
+	public void handleContentByStatus(IContent<?> content) {
+		if (!isElasticSearchAvailable()) {
+			return;
+		}
+		
+		CmsContent contentEntity = content.getContentEntity();
+		String status = contentEntity.getStatus();
+		
+		try {
+			if (ContentStatus.isOffline(status)) {
+				// 下线状态：从索引中删除
+				boolean exists = existsInIndex(content.getSiteId(), contentEntity.getContentId());
+				if (exists) {
+					deleteContentDoc(content.getSiteId(), List.of(contentEntity.getContentId()));
+					log.info("Content with status [OFFLINE] removed from index: {}", contentEntity.getContentId());
+				}
+			} else {
+				// 所有其他状态（发布、待发布、草稿、编辑中）：保留在索引中，更新状态
+				createContentDoc(content);
+				log.info("Content with status [{}] updated in index: {}", status, contentEntity.getContentId());
+			}
+		} catch (Exception e) {
+			log.error("Handle content by status failed: {}, status: {}", contentEntity.getContentId(), status, e);
 		}
 	}
 

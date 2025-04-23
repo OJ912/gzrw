@@ -52,5 +52,8 @@
   },
   "scripts": {
     "build": "webpack --mode production"
+  },
+  "dependencies": {
+    "ckeditor5-custom-build": "file:"
   }
 }

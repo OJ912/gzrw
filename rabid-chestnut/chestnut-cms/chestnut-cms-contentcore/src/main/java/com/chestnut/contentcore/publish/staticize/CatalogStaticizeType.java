@@ -80,8 +80,53 @@ public class CatalogStaticizeType implements IStaticizeType {
         if (IdUtils.validate(catalogId)) {
             CmsCatalog catalog = this.catalogService.getCatalog(catalogId);
             if (Objects.nonNull(catalog)) {
+                // 先删除旧的静态文件，强制重新生成
+                deleteStaticFile(catalog);
+                // 生成静态页
                 this.catalogStaticize(catalog);
             }
+        }
+    }
+
+    /**
+     * 删除栏目的静态文件，强制下次重新生成
+     * 
+     * @param catalog 栏目对象
+     */
+    private void deleteStaticFile(CmsCatalog catalog) {
+        try {
+            if (!catalog.isStaticize() || !catalog.isVisible() || CatalogType_Link.ID.equals(catalog.getCatalogType())) {
+                return; // 不需要静态化的栏目跳过
+            }
+            
+            CmsSite site = this.siteService.getSite(catalog.getSiteId());
+            List<CmsPublishPipe> publishPipes = this.publishPipeService.getPublishPipes(catalog.getSiteId());
+            for (CmsPublishPipe pp : publishPipes) {
+                // 删除栏目首页和列表页
+                String siteRoot = SiteUtils.getSiteRoot(site, pp.getCode());
+                String dirPath = siteRoot + catalog.getPath();
+                
+                // 删除栏目首页
+                String indexPath = dirPath + "index.shtml";
+                File indexFile = new File(indexPath);
+                if (indexFile.exists()) {
+                    logger.info("删除旧静态文件: {}", indexPath);
+                    indexFile.delete();
+                }
+                
+                // 删除栏目列表页（可能有分页）
+                for (int i = 1; i <= 10; i++) {
+                    String listPath = dirPath + "list_" + i + ".shtml";
+                    File listFile = new File(listPath);
+                    if (listFile.exists()) {
+                        listFile.delete();
+                    } else {
+                        break; // 一旦发现不存在的页面，认为后续也不存在，跳出循环
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("删除栏目静态文件失败: " + catalog.getName(), e);
         }
     }
 

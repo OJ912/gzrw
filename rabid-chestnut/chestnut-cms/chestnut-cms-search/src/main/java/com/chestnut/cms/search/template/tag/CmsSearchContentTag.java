@@ -159,8 +159,19 @@ public class CmsSearchContentTag extends AbstractListTag {
                     }
                 });
                 vo.setHitScore(hit.score());
-                vo.setPublishDateInstance(LocalDateTime.ofEpochSecond(vo.getPublishDate(), 0, ZoneOffset.UTC));
-                vo.setCreateTimeInstance(LocalDateTime.ofEpochSecond(vo.getCreateTime(), 0, ZoneOffset.UTC));
+                
+                // Add null checks for publishDate and createTime
+                if (vo.getPublishDate() != null) {
+                    vo.setPublishDateInstance(LocalDateTime.ofEpochSecond(vo.getPublishDate(), 0, ZoneOffset.UTC));
+                } else {
+                    vo.setPublishDateInstance(LocalDateTime.now());
+                }
+                
+                if (vo.getCreateTime() != null) {
+                    vo.setCreateTimeInstance(LocalDateTime.ofEpochSecond(vo.getCreateTime(), 0, ZoneOffset.UTC));
+                } else {
+                    vo.setCreateTimeInstance(LocalDateTime.now());
+                }
 
                 // 转换内部URL为HTTP URL
                 if (vo.getLink() != null && vo.getLink().startsWith("iurl://")) {

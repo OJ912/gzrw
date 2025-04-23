@@ -9,6 +9,15 @@ export function listSite(query) {
   })
 }
 
+// 查询站点列表（用于下拉选择）
+export function listSites(query) {
+  return request({
+    url: '/cms/site/list',
+    method: 'get',
+    params: query
+  })
+}
+
 export function getSiteOptions() {
   return request({
     url: '/cms/site/options',
@@ -72,6 +81,14 @@ export function publishSite(data) {
     url: '/cms/site/publish',
     method: 'post',
     data: data // { siteId:long, publishIndex:boolean, contentStatus:int }
+  })
+}
+
+// 清除模板缓存
+export function clearTemplateCache(siteId) {
+  return request({
+    url: '/cms/site/clearTemplateCache/' + siteId,
+    method: 'post'
   })
 }
 
@@ -187,5 +204,14 @@ export function getDynamicPageTypes() {
   return request({
     url: '/cms/dynamicPageTypes',
     method: 'get'
+  })
+}
+
+// 检查发布状态
+export function checkPublishStatus(siteId) {
+  return request({
+    url: '/cms/publish/check',
+    method: 'get',
+    params: { siteId }
   })
 }

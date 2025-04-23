@@ -155,3 +155,13 @@ export function removeContentAttribute(data) {
     data: data
   })
 }
+
+// 发布待发布状态内容
+export function publishToPublishContents(contentIds) {
+  return request({
+    url: '/cms/content/publish/topublish',
+    method: 'post',
+    data: { contentIds: contentIds },
+    timeout: 30000
+  })
+}

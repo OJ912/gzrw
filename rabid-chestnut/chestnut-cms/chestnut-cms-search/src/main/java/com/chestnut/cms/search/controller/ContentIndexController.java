@@ -141,8 +141,20 @@ public class ContentIndexController extends BaseRestController {
 				}
 			});
 			vo.setHitScore(hit.score());
-			vo.setPublishDateInstance(LocalDateTime.ofEpochSecond(vo.getPublishDate(), 0, ZoneOffset.UTC));
-			vo.setCreateTimeInstance(LocalDateTime.ofEpochSecond(vo.getCreateTime(), 0, ZoneOffset.UTC));
+			
+			// Add null checks for publishDate and createTime
+			if (vo.getPublishDate() != null) {
+				vo.setPublishDateInstance(LocalDateTime.ofEpochSecond(vo.getPublishDate(), 0, ZoneOffset.UTC));
+			} else {
+				vo.setPublishDateInstance(LocalDateTime.now());
+			}
+			
+			if (vo.getCreateTime() != null) {
+				vo.setCreateTimeInstance(LocalDateTime.ofEpochSecond(vo.getCreateTime(), 0, ZoneOffset.UTC));
+			} else {
+				vo.setCreateTimeInstance(LocalDateTime.now());
+			}
+			
 			CmsCatalog catalog = this.catalogService.getCatalog(vo.getCatalogId());
 			if (Objects.nonNull(catalog)) {
 				String catalogName = Stream.of(catalog.getAncestors().split(CatalogUtils.ANCESTORS_SPLITER)).map(cid -> {

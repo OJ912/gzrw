@@ -32,4 +32,6 @@ public interface ContentCorePriv {
 	String FileView = "cms:file:view";
 
 	String StaticizeView = "cms:staticize:view";
+	
+	String ContentPublish = "cms:content:publish";
 }

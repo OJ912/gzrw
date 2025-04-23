@@ -5,7 +5,7 @@
         <el-popover v-model="addPopoverVisible" class="btn-permi" placement="bottom-start" :width="400" trigger="click" v-hasPermi="[ $p('Catalog:AddContent:{0}', [ catalogId ]) ]">
           <el-row style="margin-bottom:20px;text-align:right;">
             <el-radio-group v-model="addContentType">
-              <el-radio-button 
+              <el-radio-button
                 v-for="ct in contentTypeOptions"
                 :key="ct.id"
                 :label="ct.id"
@@ -13,13 +13,13 @@
             </el-radio-group>
           </el-row>
           <el-row style="text-align:right;">
-            <el-button 
+            <el-button
               plain
               type="primary"
               size="small"
               @click="handleAdd">{{ $t('Common.Confirm') }}</el-button>
           </el-row>
-          <el-button 
+          <el-button
             type="primary"
             slot="reference"
             icon="el-icon-plus"
@@ -29,7 +29,7 @@
         </el-popover>
       </el-col>
       <el-col :span="1.5">
-        <el-button 
+        <el-button
           plain
           type="danger"
           icon="el-icon-delete"
@@ -40,7 +40,7 @@
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button 
+        <el-button
           plain
           type="primary"
           icon="el-icon-timer"
@@ -51,7 +51,7 @@
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button 
+        <el-button
           plain
           type="success"
           icon="el-icon-s-promotion"
@@ -62,7 +62,18 @@
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button 
+        <el-button
+          plain
+          type="info"
+          icon="el-icon-refresh"
+          size="mini"
+          :disabled="multiple"
+          v-hasPermi="[ $p('Catalog:EditContent:{0}', [ catalogId ]) ]"
+          @click="handleRetryPublish">重试发布
+        </el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button
           plain
           type="warning"
           icon="el-icon-download"
@@ -73,7 +84,7 @@
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button 
+        <el-button
           plain
           type="primary"
           icon="el-icon-document-copy"
@@ -83,7 +94,7 @@
         </el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button 
+        <el-button
           plain
           type="primary"
           icon="el-icon-right"
@@ -94,9 +105,9 @@
       </el-col>
       <el-col :span="1.5">
         <el-dropdown class="btn-permi" v-hasPermi="[ $p('Catalog:EditContent:{0}', [ catalogId ]) ]">
-          <el-button 
+          <el-button
             plain
-            size="mini" 
+            size="mini"
             type="primary"
             :disabled="multiple">
             <svg-icon icon-class="recommend" /> {{ $t('CMS.Content.Recommend') }}<i class="el-icon-arrow-down el-icon--right"></i>
@@ -109,9 +120,9 @@
       </el-col>
       <el-col :span="1.5">
         <el-dropdown class="btn-permi" v-hasPermi="[ $p('Catalog:EditContent:{0}', [ catalogId ]) ]">
-          <el-button 
+          <el-button
             plain
-            size="mini" 
+            size="mini"
             type="primary"
             :disabled="multiple">
             <svg-icon icon-class="fire" /> {{ $t('CMS.Content.Hot') }}<i class="el-icon-arrow-down el-icon--right"></i>
@@ -122,12 +133,21 @@
           </el-dropdown-menu>
         </el-dropdown>
       </el-col>
+      <el-col :span="2.5">
+        <el-button
+          plain
+          type="success"
+          icon="el-icon-upload2"
+          size="mini"
+          v-hasPermi="[ $p('Catalog:Publish:{0}', [ catalogId ]) ]"
+          @click="handlePublishToPublishContents">批量发布待发布</el-button>
+      </el-col>
     </el-row>
     <el-row>
       <el-form :model="queryParams" ref="queryForm" size="small" class="el-form-search" style="text-align:left;" :inline="true">
         <div class="mb12">
           <el-form-item prop="title">
-            <el-input 
+            <el-input
               v-model="queryParams.title"
               :placeholder="$t('CMS.Content.Placeholder.Title')"
               clearable
@@ -135,12 +155,12 @@
               @keyup.enter.native="handleQuery" />
           </el-form-item>
           <el-form-item prop="contentType">
-            <el-select 
+            <el-select
               v-model="queryParams.contentType"
               :placeholder="$t('CMS.Content.ContentType')"
               clearable
               style="width: 125px">
-              <el-option 
+              <el-option
                 v-for="ct in contentTypeOptions"
                 :key="ct.id"
                 :label="ct.name"
@@ -148,12 +168,12 @@
             </el-select>
           </el-form-item>
           <el-form-item prop="status">
-            <el-select 
+            <el-select
               v-model="queryParams.status"
               :placeholder="$t('CMS.Content.Status')"
               clearable
               style="width: 110px">
-              <el-option 
+              <el-option
                 v-for="dict in dict.type.CMSContentStatus"
                 :key="dict.value"
                 :label="dict.label"
@@ -181,7 +201,7 @@
         </div>
         <div class="mb12" v-show="showSearch">
           <el-form-item :label="$t('Common.CreateTime')">
-            <el-date-picker 
+            <el-date-picker
               v-model="dateRange"
               style="width: 386px"
               value-format="yyyy-MM-dd HH:mm:ss"
@@ -194,7 +214,7 @@
       </el-form>
     </el-row>
 
-    <el-table 
+    <el-table
       v-loading="loading"
       ref="tableContentList"
       size="small"
@@ -208,7 +228,7 @@
       <el-table-column :label="$t('CMS.Content.Title')" :show-overflow-tooltip="true">
         <template slot-scope="scope">
           <span class="content_attr" v-if="scope.row.topFlag>0" :title="$t('CMS.Content.SetTop')">[<svg-icon icon-class="top" />]</span>
-          <span 
+          <span
             v-for="dict in dict.type.CMSContentAttribute"
             :key="dict.value"
             :title="dict.label">
@@ -231,7 +251,7 @@
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column 
+      <el-table-column
         :label="$t('Common.Operation')"
         align="center"
         width="260"
@@ -245,7 +265,7 @@
               @click="handlePreview(scope.row)">{{ $t('CMS.ContentCore.Preview') }}</el-button>
           </span>
           <span class="btn-cell-wrap">
-            <el-button 
+            <el-button
               size="small"
               type="text"
               icon="el-icon-s-promotion"
@@ -253,7 +273,7 @@
               @click="handlePublish(scope.row)">{{ $t('CMS.ContentCore.Publish') }}</el-button>
           </span>
           <span class="btn-cell-wrap">
-            <el-button 
+            <el-button
               size="small"
               type="text"
               icon="el-icon-timer"
@@ -278,15 +298,15 @@
         </template>
       </el-table-column>
     </el-table>
-    <pagination 
+    <pagination
       v-show="total>0"
       :total="total"
       :page.sync="queryParams.pageNum"
       :limit.sync="queryParams.pageSize"
       @pagination="loadContentList" />
-              
-    <!-- 置顶时间设置弹窗 -->  
-    <el-dialog 
+
+    <!-- 置顶时间设置弹窗 -->
+    <el-dialog
       :title="$t('CMS.Content.SetTop')"
       width="400px"
       :visible.sync="topDialogVisible"
@@ -294,8 +314,8 @@
       append-to-body>
       <el-form ref="top_form" label-width="100px" :model="topForm">
         <el-form-item :label="$t('CMS.Content.TopEndTime')" prop="topEndTime">
-          <el-date-picker 
-            v-model="topForm.topEndTime" 
+          <el-date-picker
+            v-model="topForm.topEndTime"
             :picker-options="topEndTimePickerOptions"
             value-format="yyyy-MM-dd HH:mm:ss"
             type="datetime">
@@ -308,7 +328,7 @@
       </div>
     </el-dialog>
     <!-- 进度条 -->
-    <cms-progress :title="$t('CMS.ContentCore.PublishProgressTitle')" :open.sync="openProgress" :taskId="taskId"></cms-progress>
+    <cms-progress :title="progressTitle" :open.sync="openProgress" :taskId="progressTaskId"></cms-progress>
     <!-- 栏目选择组件 -->
     <cms-catalog-selector
       :open="openCatalogSelector"
@@ -327,9 +347,9 @@
 <script>
 import { getUserPreference } from "@/api/system/user";
 import { getContentTypes } from "@/api/contentcore/catalog";
-import { 
-  getContentList, delContent, publishContent, createIndexes, 
-  copyContent, moveContent, setTopContent, cancelTopContent, sortContent, 
+import {
+  getContentList, delContent, publishContent, createIndexes,
+  copyContent, moveContent, setTopContent, cancelTopContent, sortContent,
   offlineContent, archiveContent, toPublishContent, addContentAttribute, removeContentAttribute
 } from "@/api/contentcore/content";
 import CMSCatalogSelector from "@/views/cms/contentcore/catalogSelector";
@@ -338,7 +358,7 @@ import CMSProgress from '@/views/components/Progress';
 
 export default {
   name: "CMSContentList",
-  components: { 
+  components: {
     'cms-catalog-selector': CMSCatalogSelector,
     'cms-content-sort': CMSContentSort,
     'cms-progress': CMSProgress
@@ -382,11 +402,12 @@ export default {
       },
       topEndTimePickerOptions: {
         disabledDate(time) {
-            return time.getTime() < Date.now() - 8.64e7;//如果没有后面的-8.64e7就是不可以选择今天的 
+            return time.getTime() < Date.now() - 8.64e7;//如果没有后面的-8.64e7就是不可以选择今天的
          }
       },
       openProgress: false,
-      taskId: "",
+      progressTitle: "内容发布进度",
+      progressTaskId: "",
       addContentType: "",
       openCatalogSelector: false, // 栏目选择弹窗
       isCopy: false,
@@ -395,7 +416,7 @@ export default {
     };
   },
   watch: {
-    cid(newVal) { 
+    cid(newVal) {
       this.catalogId = newVal;
     },
     catalogId(newVal) {
@@ -504,15 +525,141 @@ export default {
         this.$modal.msgWarning(this.$t('CMS.Content.SelectRowFirst'));
         return;
       }
-      console.log(contentIds)
-      this.$modal.loading("Loading...");
-      publishContent(contentIds).then(response => {
-        this.$modal.closeLoading();
-        this.$modal.msgSuccess(this.$t('CMS.ContentCore.PublishSuccess'))
-        this.loadContentList();
-        this.$cache.local.set('publish_flag', "true")
+      
+      // 显示确认对话框
+      this.$confirm('确认要发布所选内容吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        this.$modal.loading("准备发布...");
+        publishContent(contentIds).then(response => {
+          this.$modal.closeLoading();
+          
+          // 如果返回了任务ID，则使用进度条显示
+          if (response.data && response.data.taskId) {
+            // 确保taskId是字符串类型
+            this.progressTaskId = String(response.data.taskId);
+            console.log("发布内容任务ID:", this.progressTaskId, "类型:", typeof this.progressTaskId);
+            this.openProgress = true;
+          } else {
+            this.$modal.msgSuccess(this.$t('CMS.ContentCore.PublishSuccess'));
+          }
+          
+          this.$cache.local.set('publish_flag', "true");
+          
+          // 发布完成后重新加载内容列表
+          setTimeout(() => {
+            this.loadContentList();
+          }, 2000);
+        }).catch((error) => {
+          this.$modal.closeLoading();
+          this.$modal.msgError("发布失败: " + (error.message || '未知错误'));
+        });
       }).catch(() => {
-        this.$modal.closeLoading();
+        this.$modal.msgInfo('已取消发布');
+      });
+    },
+
+    // 重试发布处理
+    handleRetryPublish (row) {
+      const contentIds = row.contentId ? [ row.contentId ] : this.selectedRows.map(row => row.contentId);
+      if (contentIds.length == 0) {
+        this.$modal.msgWarning(this.$t('CMS.Content.SelectRowFirst'));
+        return;
+      }
+      this.retryPublish(contentIds);
+    },
+
+    // 检查单个文章发布状态（保留原方法以兼容其他调用）
+    checkPublishStatus(contentId, retryCount) {
+      if (retryCount <= 0) {
+        this.$modal.msgWarning("发布可能未完成，请刷新页面查看最新状态");
+        this.loadContentList();
+        return;
+      }
+
+      setTimeout(() => {
+        import('@/api/contentcore/content').then(module => {
+          module.checkPublishStatus(contentId).then(response => {
+            if (response.data) {
+              this.loadContentList();
+            } else {
+              this.checkPublishStatus(contentId, retryCount - 1);
+            }
+          }).catch(() => {
+            this.checkPublishStatus(contentId, retryCount - 1);
+          });
+        });
+      }, 1000);
+    },
+
+    // 检查批量发布状态 - 使用批量API提高效率
+    checkBatchPublishStatus(contentIds, retryCount, successCount = 0) {
+      if (retryCount <= 0) {
+        // 重试次数用完，显示当前进度并刷新列表
+        this.$modal.msgWarning(`发布进度: ${successCount}/${contentIds.length}，请刷新页面查看最新状态`);
+        this.loadContentList();
+        return;
+      }
+
+      // 使用批量检查API
+      import('@/api/contentcore/content').then(module => {
+        module.checkBatchPublishStatus(contentIds).then(response => {
+          if (response.data) {
+            // 统计成功发布的数量
+            let newSuccessCount = 0;
+            const statusMap = response.data;
+
+            for (const contentId in statusMap) {
+              if (statusMap[contentId] === true) {
+                newSuccessCount++;
+              }
+            }
+
+            // 判断是否全部发布成功
+            if (newSuccessCount === contentIds.length) {
+              this.$modal.msgSuccess(`全部${contentIds.length}篇文章发布成功！`);
+              this.loadContentList();
+            } else {
+              // 如果有进展，更新成功计数
+              if (newSuccessCount > successCount) {
+                this.$modal.msgInfo(`当前发布进度: ${newSuccessCount}/${contentIds.length}，继续检查中...`);
+              }
+
+              // 等待一段时间后继续检查
+              setTimeout(() => {
+                this.checkBatchPublishStatus(contentIds, retryCount - 1, newSuccessCount);
+              }, 2000); // 增加间隔时间
+            }
+          } else {
+            // API返回错误，继续重试
+            setTimeout(() => {
+              this.checkBatchPublishStatus(contentIds, retryCount - 1, successCount);
+            }, 2000);
+          }
+        }).catch(() => {
+          // 出错时重试
+          setTimeout(() => {
+            this.checkBatchPublishStatus(contentIds, retryCount - 1, successCount);
+          }, 2000);
+        });
+      });
+    },
+
+    // 重试发布
+    retryPublish(contentIds) {
+      this.$modal.loading("重试发布中...");
+      import('@/api/contentcore/content').then(module => {
+        module.retryPublish(contentIds).then(() => {
+          this.$modal.closeLoading();
+          this.$modal.msgSuccess("重试发布成功，正在检查状态...");
+          // 重新检查发布状态
+          this.checkBatchPublishStatus(contentIds, 10);
+        }).catch((error) => {
+          this.$modal.closeLoading();
+          this.$modal.msgError("重试发布失败: " + (error.message || '未知错误'));
+        });
       });
     },
     handlePreview (row) {
@@ -551,7 +698,7 @@ export default {
       this.openCatalogSelector = true;
     },
     doCopy(catalogs, copyType) {
-      const data = {  
+      const data = {
         contentIds: this.selectedRows.map(item => item.contentId),
         catalogIds: catalogs.map(item => item.id),
         copyType: copyType
@@ -590,7 +737,7 @@ export default {
       }
     },
     handleCatalogSelectorClose() {
-      this.openCatalogSelector = false; 
+      this.openCatalogSelector = false;
     },
     handleSetTop(row) {
       if (row.contentId) {
@@ -693,6 +840,78 @@ export default {
       removeContentAttribute({ "contentIds": contentIds, "attr": "hot"}).then(response => {
         this.$modal.msgSuccess(this.$t('Common.OpSuccess'));
         this.loadContentList();
+      });
+    },
+    // 添加处理待发布内容状态的方法
+    handlePublishToPublishContents() {
+      let toPublishContentIds = [];
+      
+      // 1. 首先检查用户是否已经选择了内容
+      if (this.selectedRows.length > 0) {
+        // 只选择状态为待发布的内容
+        toPublishContentIds = this.selectedRows
+          .filter(item => item.status === '20') // 状态码为20表示待发布
+          .map(item => item.contentId);
+          
+        if (toPublishContentIds.length === 0) {
+          this.$modal.msgWarning('您选择的内容中没有待发布状态的内容');
+          return;
+        }
+      } else {
+        // 2. 如果用户没有选择内容，则根据当前过滤条件查找待发布的内容
+        
+        // 2.1 如果当前已经过滤到"待发布内容"标签，使用当前列表中所有内容
+        if (this.queryParams.status === '20') {
+          toPublishContentIds = this.contentList.map(item => item.contentId);
+        } else {
+          // 2.2 否则，从所有内容中筛选待发布的内容
+          toPublishContentIds = this.contentList
+            .filter(item => item.status === '20')
+            .map(item => item.contentId);
+        }
+      }
+      
+      if (toPublishContentIds.length === 0) {
+        this.$modal.msgWarning('没有找到待发布的内容');
+        return;
+      }
+      
+      // 显示确认对话框
+      this.$confirm(`确认要发布选中的待发布内容吗？共有 ${toPublishContentIds.length} 篇内容`, '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        this.$modal.loading("准备发布待发布内容...");
+        
+        // 使用新的API发布待发布内容
+        import('@/api/contentcore/content').then(module => {
+          module.publishToPublishContents(toPublishContentIds).then(response => {
+            this.$modal.closeLoading();
+            
+            // 如果返回了任务ID，则使用进度条显示
+            if (response.data && response.data.taskId) {
+              // 确保taskId是字符串类型
+              this.progressTaskId = String(response.data.taskId);
+              console.log("发布待发布内容任务ID:", this.progressTaskId, "类型:", typeof this.progressTaskId);
+              this.openProgress = true;
+            } else {
+              this.$modal.msgSuccess(`成功将 ${toPublishContentIds.length} 篇待发布内容提交到发布队列`);
+            }
+            
+            this.$cache.local.set('publish_flag', "true");
+            
+            // 发布完成后重新加载内容列表
+            setTimeout(() => {
+              this.loadContentList();
+            }, 3000);
+          }).catch((error) => {
+            this.$modal.closeLoading();
+            this.$modal.msgError("发布待发布内容失败: " + (error.message || '未知错误'));
+          });
+        });
+      }).catch(() => {
+        this.$modal.msgInfo('已取消发布');
       });
     }
   }

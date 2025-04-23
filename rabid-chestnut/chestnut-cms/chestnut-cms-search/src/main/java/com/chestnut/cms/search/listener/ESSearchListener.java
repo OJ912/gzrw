@@ -60,10 +60,44 @@ public class ESSearchListener {
 		}
 		CmsContent content = event.getContent().getContentEntity();
 		try {
+			log.info("Content deleted, removing from search index, content ID: {}", content.getContentId());
 			this.contentIndexService.deleteContentDoc(content.getSiteId(), List.of(content.getContentId()));
 		} catch (ElasticsearchException | IOException e) {
-			log.error("Delete es index document failed: {}", content.getContentId(), e);
+			log.error("Delete content from search index failed: {}", content.getContentId(), e);
 		}
+	}
+	
+	/**
+	 * 监听内容保存事件，同步更新索引
+	 */
+	@EventListener
+	public void afterContentSave(AfterContentSaveEvent event) {
+		if (!contentIndexService.isElasticSearchAvailable()) {
+			return;
+		}
+		
+		IContent<?> content = event.getContent();
+		log.info("Content saved, updating search index based on content status for content ID: {}", 
+				content.getContentEntity().getContentId());
+		
+		// 根据内容状态处理索引
+		this.contentIndexService.handleContentByStatus(content);
+	}
+
+	/**
+	 * 监听内容待发布状态变更事件
+	 */
+	@EventListener
+	public void afterContentToPublish(AfterContentToPublishEvent event) {
+		if (!contentIndexService.isElasticSearchAvailable()) {
+			return;
+		}
+		
+		IContent<?> content = event.getContent();
+		log.info("Content changed to TO_PUBLISH status, handling search index for content ID: {}", 
+				content.getContentEntity().getContentId());
+		
+		this.contentIndexService.handleContentByStatus(content);
 	}
 
 	@EventListener
@@ -71,8 +105,12 @@ public class ESSearchListener {
 		if (!contentIndexService.isElasticSearchAvailable()) {
 			return;
 		}
+		
 		IContent<?> content = event.getContent();
-		this.contentIndexService.createContentDoc(content);
+		log.info("Content published, handling search index for content ID: {}", 
+				content.getContentEntity().getContentId());
+		
+		this.contentIndexService.handleContentByStatus(content);
 	}
 
 	@EventListener
@@ -80,12 +118,12 @@ public class ESSearchListener {
 		if (!contentIndexService.isElasticSearchAvailable()) {
 			return;
 		}
-		CmsContent content = event.getContent().getContentEntity();
-		try {
-			this.contentIndexService.deleteContentDoc(content.getSiteId(), List.of(content.getContentId()));
-		} catch (ElasticsearchException | IOException e) {
-			log.error("Delete es index document failed: {}", content.getContentId(), e);
-		}
+		
+		IContent<?> content = event.getContent();
+		log.info("Content set to offline, handling search index for content ID: {}", 
+				content.getContentEntity().getContentId());
+		
+		this.contentIndexService.handleContentByStatus(content);
 	}
 
 	@EventListener

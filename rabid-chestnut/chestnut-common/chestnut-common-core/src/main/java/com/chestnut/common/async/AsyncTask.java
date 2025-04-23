@@ -104,6 +104,9 @@ public abstract class AsyncTask implements Runnable {
 	@Override
 	public void run() {
 		try {
+			// 设置异步上下文标志
+			SecurityAsyncUtils.setupAsyncContext();
+
 			AsyncTaskManager.setCurrent(this);
 			this.checkInterrupt();
 			this.start();
@@ -125,6 +128,9 @@ public abstract class AsyncTask implements Runnable {
 		} finally {
 			this.setEndTime(LocalDateTime.now());
 			AsyncTaskManager.removeCurrent();
+
+			// 清除异步上下文标志
+			SecurityAsyncUtils.clearAsyncContext();
 		}
 	}
 
@@ -174,7 +180,7 @@ public abstract class AsyncTask implements Runnable {
 
 	/**
 	 * 检查中断标识，抛出异常中断任务执行，需要run0中自行调用中断任务。
-	 * 
+	 *
 	 * @throws InterruptedException
 	 */
 	public void checkInterrupt() throws InterruptedException {
