@@ -140,7 +140,6 @@
 <script>
 import { listSites } from "@/api/contentcore/site";
 import { publishSite } from "@/api/contentcore/site";
-import { publishToPublishContents } from "@/api/contentcore/content";
 import { getTaskInfo, getTaskList } from "@/api/system/async";
 
 export default {

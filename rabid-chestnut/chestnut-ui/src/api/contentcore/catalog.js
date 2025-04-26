@@ -136,6 +136,22 @@ export function sortCatalog(data) {
   })
 }
 
+export function reorderCatalogs(siteId, parentId) {
+  return request({
+    url: '/cms/catalog/reorder',
+    method: 'put',
+    params: { siteId: siteId, parentId: parentId }
+  })
+}
+
+export function reorderAllCatalogs(siteId) {
+  return request({
+    url: '/cms/catalog/reorderAll',
+    method: 'put',
+    params: { siteId: siteId }
+  })
+}
+
 export function generateAliasAndPath(data) {
   return request({
     url: '/cms/catalog/spelling',

@@ -55,6 +55,7 @@ import com.chestnut.system.validator.LongId;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -73,6 +74,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/cms/catalog")
+@Slf4j
 public class CatalogController extends BaseRestController {
 
 	private final ISiteService siteService;
@@ -356,10 +358,19 @@ public class CatalogController extends BaseRestController {
 	@Log(title = "栏目排序", businessType = BusinessType.UPDATE)
 	@PutMapping("/sort")
 	public R<?> sortCatalog(@RequestBody @Validated SortCatalogDTO dto) {
-		if (dto.getSort() == 0) {
-			return R.fail("排序数值不能为0");
-		}
-		this.catalogService.sortCatalog(dto.getCatalogId(), dto.getSort());
+		catalogService.sortCatalog(dto.getCatalogId(), dto.getSort());
+		return R.ok();
+	}
+
+	/**
+	 * 重新编号所有栏目排序，包括所有子栏目
+	 */
+	@Priv(type = AdminUserType.TYPE, value = ContentCorePriv.CatalogView)
+	@Log(title = "重排所有栏目序号", businessType = BusinessType.UPDATE)
+	@PutMapping("/reorderAll")
+	public R<?> reorderAllCatalogs(@RequestParam @LongId Long siteId) {
+		log.info("接收到重排所有栏目序号请求: siteId={}", siteId);
+		catalogService.reorderAllCatalogs(siteId);
 		return R.ok();
 	}
 

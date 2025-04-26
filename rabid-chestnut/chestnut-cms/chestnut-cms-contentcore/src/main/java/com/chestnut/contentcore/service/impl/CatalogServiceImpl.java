@@ -53,6 +53,7 @@ import com.chestnut.contentcore.util.*;
 import com.chestnut.system.fixed.dict.YesOrNo;
 import com.chestnut.system.service.ISysPermissionService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
@@ -66,6 +67,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CatalogServiceImpl extends ServiceImpl<CmsCatalogMapper, CmsCatalog> implements ICatalogService {
 
 	public static final String CACHE_PREFIX_ID = CMSConfig.CachePrefix + "catalog:id:";
@@ -552,73 +554,114 @@ public class CatalogServiceImpl extends ServiceImpl<CmsCatalogMapper, CmsCatalog
 	@Override
 	@Transactional(rollbackFor = Exception.class)
 	public void sortCatalog(Long catalogId, Integer sort) {
-		CmsCatalog catalog = this.getCatalog(catalogId);
-		if (sort < 0) {
-			// 上移
-			List<CmsCatalog> beforeCatalogs = this.lambdaQuery()
-					.select(List.of(CmsCatalog::getSiteId, CmsCatalog::getCatalogId, CmsCatalog::getAlias,
-							CmsCatalog::getSortFlag))
-					.eq(CmsCatalog::getSiteId, catalog.getSiteId()).eq(CmsCatalog::getParentId, catalog.getParentId())
-					.lt(CmsCatalog::getSortFlag, catalog.getSortFlag()).orderByDesc(CmsCatalog::getSortFlag)
-					.page(new Page<>(1, Math.abs(sort), false)).getRecords();
-			if (beforeCatalogs.isEmpty()) {
-				return; // 无需排序
+		RLock lock = redissonClient.getLock("CatalogSort-" + catalogId);
+		lock.lock();
+		try {
+			CmsCatalog catalog = this.getCatalog(catalogId);
+			log.info("开始排序栏目: ID={}, 名称={}, 父ID={}, 当前排序值={}, 移动步数={}", 
+				catalog.getCatalogId(), catalog.getName(), catalog.getParentId(), 
+				catalog.getSortFlag(), sort);
+				
+			if (sort < 0) {
+				// 上移
+				List<CmsCatalog> beforeCatalogs = this.lambdaQuery()
+						.select(List.of(CmsCatalog::getSiteId, CmsCatalog::getCatalogId, CmsCatalog::getAlias,
+								CmsCatalog::getSortFlag, CmsCatalog::getName))
+						.eq(CmsCatalog::getSiteId, catalog.getSiteId())
+						.eq(CmsCatalog::getParentId, catalog.getParentId())
+						.lt(CmsCatalog::getSortFlag, catalog.getSortFlag())
+						.or()
+						.eq(CmsCatalog::getSiteId, catalog.getSiteId())
+						.eq(CmsCatalog::getParentId, catalog.getParentId())
+						.eq(CmsCatalog::getSortFlag, catalog.getSortFlag())
+						.lt(CmsCatalog::getCatalogId, catalog.getCatalogId())
+						.orderByDesc(CmsCatalog::getSortFlag)
+						.orderByDesc(CmsCatalog::getCatalogId)
+						.page(new Page<>(1, Math.abs(sort), false))
+						.getRecords();
+				
+				if (beforeCatalogs.isEmpty()) {
+					log.info("栏目已经是第一个，无需上移");
+					return; // 无需排序
+				}
+				
+				CmsCatalog targetCatalog = beforeCatalogs.get(beforeCatalogs.size() - 1);
+				log.info("上移目标栏目: ID={}, 名称={}, 排序值={}", 
+					targetCatalog.getCatalogId(), targetCatalog.getName(), targetCatalog.getSortFlag());
+					
+				// 交换排序值，简化排序逻辑
+				Long tempSortFlag = catalog.getSortFlag();
+				
+				// 更新排序值
+				updateSortFlags(catalog, targetCatalog, tempSortFlag);
+			} else {
+				// 下移
+				List<CmsCatalog> afterCatalogs = this.lambdaQuery()
+						.select(List.of(CmsCatalog::getSiteId, CmsCatalog::getCatalogId, CmsCatalog::getAlias,
+								CmsCatalog::getSortFlag, CmsCatalog::getName))
+						.eq(CmsCatalog::getSiteId, catalog.getSiteId())
+						.eq(CmsCatalog::getParentId, catalog.getParentId())
+						.gt(CmsCatalog::getSortFlag, catalog.getSortFlag())
+						.or()
+						.eq(CmsCatalog::getSiteId, catalog.getSiteId())
+						.eq(CmsCatalog::getParentId, catalog.getParentId())
+						.eq(CmsCatalog::getSortFlag, catalog.getSortFlag())
+						.gt(CmsCatalog::getCatalogId, catalog.getCatalogId())
+						.orderByAsc(CmsCatalog::getSortFlag)
+						.orderByAsc(CmsCatalog::getCatalogId)
+						.page(new Page<>(1, sort, false))
+						.getRecords();
+						
+				if (afterCatalogs.isEmpty()) {
+					log.info("栏目已经是最后一个，无需下移");
+					return; // 无需排序
+				}
+				
+				CmsCatalog targetCatalog = afterCatalogs.get(afterCatalogs.size() - 1);
+				log.info("下移目标栏目: ID={}, 名称={}, 排序值={}", 
+					targetCatalog.getCatalogId(), targetCatalog.getName(), targetCatalog.getSortFlag());
+				
+				// 交换排序值，简化排序逻辑
+				Long tempSortFlag = catalog.getSortFlag();
+				
+				// 更新排序值
+				updateSortFlags(catalog, targetCatalog, tempSortFlag);
 			}
-			CmsCatalog targetCatalog = beforeCatalogs.get(beforeCatalogs.size() - 1);
-			// 更新排序值
-			this.catalogSortPlusOne(targetCatalog.getSortFlag(), catalog.getSortFlag());
-			this.lambdaUpdate().set(CmsCatalog::getSortFlag, targetCatalog.getSortFlag())
-					.eq(CmsCatalog::getCatalogId, catalog.getCatalogId()).update();
-			beforeCatalogs.forEach(this::clearCache);
-		} else {
-			// 下移
-			List<CmsCatalog> afterCatalogs = this.lambdaQuery()
-					.select(List.of(CmsCatalog::getSiteId, CmsCatalog::getCatalogId, CmsCatalog::getAlias,
-							CmsCatalog::getSortFlag))
-					.eq(CmsCatalog::getSiteId, catalog.getSiteId()).eq(CmsCatalog::getParentId, catalog.getParentId())
-					.gt(CmsCatalog::getSortFlag, catalog.getSortFlag()).orderByAsc(CmsCatalog::getSortFlag)
-					.page(new Page<>(1, sort, false)).getRecords();
-			if (afterCatalogs.isEmpty()) {
-				return; // 无需排序
-			}
-			CmsCatalog targetCatalog = afterCatalogs.get(afterCatalogs.size() - 1);
-			// 更新排序值
-			this.catalogSortMinusOne(catalog.getSortFlag(), targetCatalog.getSortFlag());
-			this.lambdaUpdate().set(CmsCatalog::getSortFlag, targetCatalog.getSortFlag())
-					.eq(CmsCatalog::getCatalogId, catalog.getCatalogId()).update();
-			afterCatalogs.forEach(this::clearCache);
+			
+			// 确保从数据库重新获取最新数据
+			this.redisCache.deleteObject(CACHE_PREFIX_ID + catalog.getCatalogId());
+			this.redisCache.deleteObject(CACHE_PREFIX_ALIAS + catalog.getSiteId() + ":" + catalog.getAlias());
+		} catch (Exception e) {
+			log.error("栏目排序失败", e);
+			throw e;
+		} finally {
+			lock.unlock();
 		}
-		this.clearCache(catalog);
 	}
 
 	/**
-	 * 排序标识范围内[startSort, endSort)的所有栏目排序值+1
+	 * 更新栏目排序值并清除缓存
 	 */
-	private void catalogSortPlusOne(long startSort, long endSort) {
-		List<CmsCatalog> catalogs = this.lambdaQuery()
-				.select(CmsCatalog::getCatalogId, CmsCatalog::getSortFlag)
-				.ge(CmsCatalog::getSortFlag, startSort)
-				.lt(CmsCatalog::getSortFlag, endSort)
-				.list();
-		catalogs.forEach(catalog -> {
-			this.lambdaUpdate().set(CmsCatalog::getSortFlag, catalog.getSortFlag() + 1)
-					.eq(CmsCatalog::getCatalogId, catalog.getCatalogId()).update();
-		});
-	}
-
-	/**
-	 * 排序标识范围内(startSort, endSort]的所有栏目排序值-1
-	 */
-	private void catalogSortMinusOne(long startSort, long endSort) {
-		List<CmsCatalog> catalogs = this.lambdaQuery()
-				.select(CmsCatalog::getCatalogId, CmsCatalog::getSortFlag)
-				.gt(CmsCatalog::getSortFlag, startSort)
-				.le(CmsCatalog::getSortFlag, endSort)
-				.list();
-		catalogs.forEach(catalog -> {
-			this.lambdaUpdate().set(CmsCatalog::getSortFlag, catalog.getSortFlag() - 1)
-					.eq(CmsCatalog::getCatalogId, catalog.getCatalogId()).update();
-		});
+	private void updateSortFlags(CmsCatalog sourceCatalog, CmsCatalog targetCatalog, Long tempSortFlag) {
+		// 更新当前栏目的排序值
+		this.lambdaUpdate()
+			.set(CmsCatalog::getSortFlag, targetCatalog.getSortFlag())
+			.eq(CmsCatalog::getCatalogId, sourceCatalog.getCatalogId())
+			.update();
+		
+		// 更新目标栏目的排序值
+		this.lambdaUpdate()
+			.set(CmsCatalog::getSortFlag, tempSortFlag)
+			.eq(CmsCatalog::getCatalogId, targetCatalog.getCatalogId())
+			.update();
+		
+		// 清除缓存
+		this.clearCache(sourceCatalog);
+		this.clearCache(targetCatalog);
+		
+		log.info("交换排序值完成: 栏目[{}]的排序值从{}变为{}, 栏目[{}]的排序值从{}变为{}", 
+			sourceCatalog.getName(), tempSortFlag, targetCatalog.getSortFlag(),
+			targetCatalog.getName(), targetCatalog.getSortFlag(), tempSortFlag);
 	}
 
 	@Override
@@ -631,6 +674,35 @@ public class CatalogServiceImpl extends ServiceImpl<CmsCatalogMapper, CmsCatalog
 					.eq(CmsCatalog::getCatalogId, catalog.getCatalogId()).update();
 		} finally {
 			lock.unlock();
+		}
+	}
+
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public void reorderAllCatalogs(Long siteId) {
+		// 获取所有栏目并按层级排序
+		List<CmsCatalog> allCatalogs = this.lambdaQuery()
+				.select(CmsCatalog::getCatalogId, CmsCatalog::getParentId, CmsCatalog::getSortFlag, CmsCatalog::getName)
+				.eq(CmsCatalog::getSiteId, siteId)
+				.orderByAsc(CmsCatalog::getTreeLevel)
+				.orderByAsc(CmsCatalog::getSortFlag)
+				.list();
+		
+		if (allCatalogs.isEmpty()) {
+			return;
+		}
+		
+		// 重新分配排序值，步长为10，方便后续插入
+		long sortValue = 10;
+		for (CmsCatalog catalog : allCatalogs) {
+			if (catalog.getSortFlag() != sortValue) {
+				this.lambdaUpdate()
+					.set(CmsCatalog::getSortFlag, sortValue)
+					.eq(CmsCatalog::getCatalogId, catalog.getCatalogId())
+					.update();
+				this.clearCache(catalog);
+			}
+			sortValue += 10;
 		}
 	}
 }

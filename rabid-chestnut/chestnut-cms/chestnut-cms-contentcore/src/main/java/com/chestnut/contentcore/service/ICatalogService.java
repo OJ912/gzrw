@@ -185,6 +185,13 @@ public interface ICatalogService extends IService<CmsCatalog> {
 	void sortCatalog(Long catalogId, Integer sort);
 
 	/**
+	 * 递归重排所有栏目（包括子栏目）
+	 *
+	 * @param siteId 站点ID
+	 */
+	void reorderAllCatalogs(Long siteId);
+
+	/**
 	 * 栏目内容数变更
 	 *
 	 * @param catalogId

@@ -11,6 +11,7 @@
         <el-dropdown-menu slot="dropdown">
           <el-dropdown-item @click.native="handleAdd">{{ $t('CMS.Catalog.AddCatalog') }}</el-dropdown-item>
           <el-dropdown-item @click.native="handleBatchAdd">{{ $t('CMS.Catalog.BatchAddCatalog') }}</el-dropdown-item>
+          <el-dropdown-item @click.native="handleReorderAllCatalogs" divided>重排所有栏目序号</el-dropdown-item>
         </el-dropdown-menu>
       </el-dropdown>
       <el-input 
@@ -146,7 +147,7 @@
   </div>
 </template>
 <script>
-import { getCatalogTypes, getCatalogTreeData, addCatalog, batchAddCatalog, publishCatalog, sortCatalog, generateAliasAndPath } from "@/api/contentcore/catalog";
+import { getCatalogTypes, getCatalogTreeData, addCatalog, batchAddCatalog, publishCatalog, sortCatalog, generateAliasAndPath, reorderCatalogs, reorderAllCatalogs } from "@/api/contentcore/catalog";
 import Treeselect from "@riophae/vue-treeselect";
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 import CMSProgress from '@/views/components/Progress';
@@ -385,6 +386,59 @@ export default {
       this.publishChild = false;
     },
     handleCloseProgress() {
+      this.getList();
+    },
+    handleReorderCatalogs() {
+      this.$confirm('确认要重新排序所有栏目吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        // 从本地缓存中获取当前站点ID
+        const siteId = this.$cache.local.get("CurrentSite");
+        
+        if (!siteId) {
+          this.$modal.msgError('获取当前站点ID失败，请先选择站点');
+          return;
+        }
+        
+        this.loading = true;
+        reorderCatalogs(siteId, 0).then(() => {
+          this.$modal.msgSuccess('重排栏目序号成功');
+          this.loadCatalogTreeData();
+        }).catch(err => {
+          console.error('重排栏目序号失败:', err);
+          this.$modal.msgError('重排栏目序号失败: ' + (err.message || err));
+        }).finally(() => {
+          this.loading = false;
+        });
+      });
+    },
+    handleReorderAllCatalogs() {
+      this.$confirm('确认要重新排序所有栏目及其子栏目吗？此操作可能需要较长时间', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        // 从本地缓存中获取当前站点ID
+        const siteId = this.$cache.local.get("CurrentSite");
+        
+        if (!siteId) {
+          this.$modal.msgError('获取当前站点ID失败，请先选择站点');
+          return;
+        }
+        
+        this.loading = true;
+        reorderAllCatalogs(siteId).then(() => {
+          this.$modal.msgSuccess('重排所有栏目序号成功');
+          this.loadCatalogTreeData();
+        }).catch(err => {
+          console.error('重排所有栏目序号失败:', err);
+          this.$modal.msgError('重排所有栏目序号失败: ' + (err.message || err));
+        }).finally(() => {
+          this.loading = false;
+        });
+      });
     },
   }
 };
