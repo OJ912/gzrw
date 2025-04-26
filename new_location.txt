@@ -1,0 +1,9 @@
+# Resources path for gzmdrw
+location /resources/ {
+    alias C:/gzmdrw_site_master/wwwroot_release/gzmdrw/resources/;
+    autoindex off;
+    include mime.types;
+    default_type application/octet-stream;
+    expires 7d;
+    add_header Cache-Control "public, max-age=604800";
+}
