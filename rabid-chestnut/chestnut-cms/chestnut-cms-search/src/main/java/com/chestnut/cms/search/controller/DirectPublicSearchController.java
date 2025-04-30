@@ -62,7 +62,7 @@ import java.util.stream.Stream;
  */
 @RequiredArgsConstructor
 @RestController
-@RequestMapping({"/dev-api/api/public/v2", "/prod-api/api/public/v2"})
+@RequestMapping({"/dev-api/api/public/v2", "/prod-api/api/public/v2", "/api/public/v2"})
 public class DirectPublicSearchController {
 
     private final CmsSiteMapper siteMapper;
@@ -138,8 +138,8 @@ public class DirectPublicSearchController {
                             h.fields("title", f -> f.preTags("<font color='red'>").postTags("</font>"))
                                     .fields("fullText", f -> f.preTags("<font color='red'>").postTags("</font>")));
                 }
-                s.sort(sort -> sort.field(f -> f.field("_score").order(SortOrder.Desc)));
-                s.sort(sort -> sort.field(f -> f.field("publishDate").order(SortOrder.Desc))); // 排序: _score:desc + publishDate:desc
+                s.sort(sort -> sort.field(f -> f.field("_score").order(SortOrder.Desc))); // 主要排序：相关度分数降序
+                s.sort(sort -> sort.field(f -> f.field("publishDate").order(SortOrder.Desc))); // 次要排序：publishDate降序
                 s.from((pageNum - 1) * pageSize).size(pageSize);  // 分页
                 return s;
             }, ObjectNode.class);

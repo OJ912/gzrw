@@ -1,0 +1,659 @@
+<!-- 用api搜索似乎已经成功了 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>站内搜索_贵阳人文科技学院</title>
+    <link
+      href="${Prefix}css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- 添加 Montserrat 字体 -->
+    <link
+      href="${Prefix}css/font_montserrat.css"
+      rel="stylesheet"
+    />
+    <!-- 添加Font Awesome图标CSS -->
+    <link
+      rel="stylesheet"
+      href="${Prefix}css/font_awesome_all.min.css"
+    />
+    <style>
+      /* 自定义颜色变量 */
+      :root {
+        --primary-color: #ad1e23;
+        --primary-color-dark: #8a181c;
+      }
+      
+      /* 只保留必要的自定义样式，其他都用Bootstrap类替代 */
+      .search-btn {
+        background-color: var(--primary-color);
+      }
+      
+      .search-btn:active {
+        background-color: var(--primary-color-dark);
+      }
+      
+      .pagination .active .page-link {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+      }
+      
+      /* 增强当前页码的样式 */
+      .pagination .active .page-link {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        font-weight: bold;
+        transform: scale(1.1);
+        box-shadow: 0 0 5px rgba(173, 30, 35, 0.5);
+      }
+      
+      /* 添加当前页码的提示文本 */
+      .current-page-indicator {
+        color: var(--primary-color);
+        font-weight: bold;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 顶部导航栏 start-->
+    <@cms_include file="common/home_nav_top.template.html"></@cms_include>
+    <!-- 顶部导航栏 end-->
+
+    <!-- 倒数第二顶部导航栏 start-->
+    <div class="nav-menu container-fluid d-flex justify-content-center align-items-center" style="font-size: 20px;font-weight: 500; min-height:170px;">
+        <!-- 定义递归宏 -->
+        <#macro renderMenu items currentLevel=1 maxLevel=3>
+            <#list items as item>
+                <@cms_catalog id="${item.catalogId}" level="Child" size="30">
+                <li>
+                    <#if DataList?size gt 0 && currentLevel lt maxLevel>
+                        <div class="dropend">
+                            <a class="dropdown-item dropdown-toggle" href="${item.link!'#'}">
+                                ${item.name}
+                            </a>
+                            <ul class="dropdown-menu">
+                                <@renderMenu DataList currentLevel+1 maxLevel/>
+                            </ul>
+                        </div>
+                    <#else>
+                        <a class="dropdown-item" href="${item.link!'#'}">${item.name}</a>
+                    </#if>
+                </li>
+                </@cms_catalog>
+            </#list>
+        </#macro>
+  
+        <!-- 主导航菜单 -->
+        <ul class="nav nav-pills d-flex align-items-center">
+            <@cms_catalog level="Root" condition="tree_level=1" size="30">
+            <#list DataList as c1>
+                <@cms_catalog id="${c1.catalogId}" level="Child" size="30">
+                <li class="nav-item <#if DataList?size gt 0>dropdown</#if>">
+                    <a class="nav-link <#if DataList?size gt 0>dropdown-toggle</#if>"
+                    <#if Catalog?? && Catalog.ancestors??>
+                        ${((Catalog.ancestors?split(':'))[0]==c1.catalogId?string)?then('style="color:#AD1E23;"','')}
+                    </#if>
+                    href="${c1.link!'#'}">
+                        ${c1.name}
+                    </a>
+                    <#if DataList?size gt 0>
+                        <ul class="dropdown-menu">
+                            <@renderMenu DataList 2/>
+                        </ul>
+                    </#if>
+                </li>
+                </@cms_catalog>
+            </#list>
+            </@cms_catalog>
+        </ul>
+    </div>
+    
+    <style>
+        .nav-menu .nav {
+            font-family: "Montserrat", sans-serif;
+            font-weight: bolder;
+        }
+
+        .nav-menu .nav-link {
+            color: #333;
+            padding: 0.5rem 1rem;
+        }
+
+        .nav-menu .dropdown-menu {
+            border-radius: 0;
+        }
+
+        /* 保持原有的下拉菜单hover样式 */
+        .nav-menu .dropdown:hover > .dropdown-menu {
+            display: block;
+            border-top: 3px solid #AD1E23;
+        }
+
+        .nav-menu .dropend:hover > .dropdown-menu {
+            display: block;
+            position: absolute;
+            left: 100%;
+            top: 0;
+        }
+
+        /* 搜索框样式 */
+        .nav-menu .search-box {
+            position: relative;
+        }
+
+        .nav-menu .search-box input {
+            padding: 0.375rem 0.75rem;
+            padding-left: 35px; /* 为图标留出空间 */
+            border-radius: 5px;
+            border: 1px solid #ced4da;
+            width: 200px;
+        }
+        
+        .nav-menu .search-box input:focus {
+            outline: none;
+            border-color: black;
+        }
+
+        .nav-menu .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            cursor: pointer; /* 添加鼠标指针样式 */
+        }
+
+        .nav-menu .nav-link:hover {
+            color: #AD1E23;
+        }
+    </style>
+  
+    <!-- 添加初始化脚本 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 移除所有下拉菜单的 data-bs-toggle 属性，防止点击触发
+            document.querySelectorAll('.dropdown-toggle').forEach(function(element) {
+                element.removeAttribute('data-bs-toggle');
+            });
+        });
+    </script>
+    <!-- 倒数第二顶部导航栏 end-->
+
+    <div class="container my-5 py-3 mx-auto" style="max-width: 1200px;">
+      <div class="mb-4">
+        <h2 class="mb-4 fw-bold text-dark">站内搜索</h2>
+        <!-- 搜索表单 -->
+         <!-- 测试环境http://localhost:8090/prod-api/api/public/v2/search -->
+          <!-- 生产环境https://www.gzmdrw.cn/prod-api/prod-api/api/public/v2/search -->
+        <form
+          class="search-form"
+          id="searchForm"
+          action="http://localhost:8090/prod-api/api/public/v2/search"
+          method="get"
+        >
+          <div class="input-group">
+            <input
+              type="text"
+              name="query"
+              class="form-control rounded-start"
+              placeholder="测试请输入单个或多个关键词 中间用空格隔开 按回车或点击搜索按钮进行搜索"
+              aria-label="搜索关键词"
+              required
+            />
+            <!-- 修改必要的参数 -->
+            <input type="hidden" id="onlyTitleInput" name="onlyTitle" value="false" />
+            <input type="hidden" name="pageNum" value="1" />
+            <input type="hidden" name="pageSize" value="6" />
+            <button class="search-btn btn text-white rounded-end border-0 px-3" type="submit" aria-label="搜索">
+              <i class="fas fa-search"></i>
+            </button>
+          </div>
+        </form>
+
+        <div class="mt-3 text-secondary small d-flex align-items-center">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="onlyTitleCheckbox">
+            <label class="form-check-label" for="onlyTitleCheckbox">
+              仅匹配标题
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 搜索结果将在这里显示 -->
+      <div id="searchResults" class="mt-4"></div>
+
+      <!-- 分页控件 -->
+      <div id="pagination">
+          <#if (PageTotal??)>
+              <#if PageTotal gt 0>
+                  <nav aria-label="Page navigation" class="w-100">
+                      <ul class="pagination d-flex justify-content-center align-items-center flex-wrap m-1">
+                          <!-- 分页内容 -->
+                      </ul>
+                  </nav>
+                  <div class="text-secondary fs-6 ps-2 mt-2 text-center">
+                      共 <#if (PageCount??)>${PageCount?int}<#else>0</#if> 页 ${PageTotal} 条数据
+                  </div>
+              </#if>
+          </#if>
+      </div>
+
+      <div class="mt-4">
+        <a href="${Site.link}" class="text-decoration-none fw-bold" style="color: #ad1e23;"><i class="fas fa-arrow-left"></i> 返回首页</a>
+      </div>
+    </div>
+
+    <!-- 页脚 -->
+    <@cms_include file="common/home_footer.template.html"></@cms_include>
+
+    <!-- Bootstrap JS -->
+    <script src="${Prefix}js/bootstrap.bundle.min.js"></script>
+
+    <!-- 搜索功能增强脚本 -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // 获取搜索表单和输入框
+        const searchForm = document.getElementById("searchForm");
+        const searchInput = document.querySelector(".form-control");
+        const resultsContainer = document.getElementById("searchResults");
+        const paginationContainer = document.getElementById("pagination");
+        const onlyTitleCheckbox = document.getElementById("onlyTitleCheckbox");
+        const onlyTitleInput = document.getElementById("onlyTitleInput");
+
+        // 当前页码和每页显示数量
+        let currentPage = 1;
+        const pageSize = 6;
+        
+        // 监听复选框变化
+        onlyTitleCheckbox.addEventListener("change", function() {
+          onlyTitleInput.value = this.checked ? "true" : "false";
+        });
+
+        // 在页面加载时就获取并固定baseUrl
+        const fullUrl = window.parent.location.href;
+        // 从URL中提取基础部分 (http://localhost/admin/cms/preview)
+        const urlParts = fullUrl.split('?');
+        const baseUrl = urlParts[0];
+        console.log("修正后的baseUrl:", baseUrl);
+
+        // 硬编码后端API基础URL
+        const backendApiUrl = "http://localhost:8090/";
+        console.log("后端API基础URL:", backendApiUrl);
+
+        // 自动聚焦到搜索框
+        searchInput.focus();
+
+        // 表单提交前验证
+        searchForm.addEventListener("submit", function (event) {
+          <#noparse>
+          event.preventDefault(); // 阻止表单默认提交
+          const query = searchInput.value.trim();
+
+          // 如果搜索词为空，阻止提交
+          if (!query) {
+            alert("请输入搜索关键词");
+            searchInput.focus();
+            return;
+          }
+
+          // 重置页码为1
+          currentPage = 1;
+
+          // 发送API请求并处理结果
+          fetchSearchResults(query, currentPage);
+        });
+
+        // 发送搜索请求并处理结果
+        function fetchSearchResults(keyword, pageNum) {
+          // 显示加载中提示
+          resultsContainer.innerHTML =
+            '<div class="text-center my-4"><i class="fas fa-spinner fa-spin"></i> 正在搜索，请稍候...</div>';
+
+          // 使用硬编码的API URL
+          //测试环境localhost/dev-api/ //
+          //生产环境/172.16.2.72:8000/prod-api/  //
+          // "http://172.16.2.72:8000/prod-api/cms/search/contents"; //
+          const apiUrl = "http://localhost:8090/prod-api/api/public/v2/search";
+          const params = new URLSearchParams({
+            query: keyword,
+            onlyTitle: onlyTitleInput.value,
+            pageNum: pageNum,
+            pageSize: pageSize,
+          });
+
+          // 获取认证令牌
+          const token = getCookie("Authorization") || getCookie("Admin-Token");
+
+          // 设置请求头
+          const headers = {
+            Accept: "application/json, text/plain, */*",
+            Authorization: token ? "Bearer " + token : "",
+          };
+
+          fetch(apiUrl + "?" + params.toString(), {
+            method: "GET",
+            headers: headers,
+          })
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error("网络响应不正常");
+              }
+              return response.json();
+            })
+            .then((data) => {
+              if (data.code === 401) {
+                console.error("认证失败:", data.msg);
+                resultsContainer.innerHTML =
+                  '<div class="alert alert-warning">搜索需要登录权限，请先登录</div>';
+                return;
+              }
+
+              // 处理搜索结果
+              displaySearchResults(data, keyword);
+
+              // 创建分页器 - 根据实际API返回的数据结构进行调整
+              // 从API响应中提取总数
+              let total = 0;
+              let rows = [];
+              
+              // 根据实际API返回的数据结构提取数据
+              if (data.total) {
+                // 直接使用API返回的total字段
+                total = parseInt(data.total);
+                // 假设数据在data.rows中
+                rows = data.rows || [];
+              }
+              
+              console.log("API返回数据:", data);
+              console.log("提取的总数:", total);
+              
+              // 如果有数据，创建分页
+              if (total > 0) {
+                createPagination(total, pageNum, keyword);
+              } else if (paginationContainer) {
+                paginationContainer.innerHTML = "";
+              }
+            })
+            .catch((error) => {
+              console.error("搜索请求出错:", error);
+              resultsContainer.innerHTML =
+                '<div class="alert alert-danger">搜索请求失败，请稍后再试</div>';
+            });
+        }
+
+        // 获取Cookie的辅助函数
+        function getCookie(name) {
+          const value = "; " + document.cookie;
+          const parts = value.split("; " + name + "=");
+          if (parts.length === 2) return parts.pop().split(";").shift();
+          return null;
+        }
+
+        // 显示搜索结果
+        function displaySearchResults(data, keyword) {
+          // 清空现有结果
+          resultsContainer.innerHTML = "";
+
+          // 添加搜索结果标题
+          const searchTitle = document.createElement("div");
+          searchTitle.className = "mb-4";
+          searchTitle.innerHTML = `<h4>搜索结果: "${keyword}"</h4>`;
+          resultsContainer.appendChild(searchTitle);
+
+          // 提取数据行 - 根据实际API返回的数据结构
+          let rows = [];
+          if (data.rows) {
+            rows = data.rows;
+          }
+          
+          console.log("搜索结果行数:", rows.length);
+
+          // 检查是否有结果
+          if (!rows || rows.length === 0) {
+            resultsContainer.innerHTML +=
+              '<p class="text-center">没有找到相关结果</p>';
+            return;
+          }
+
+          // 使用之前定义的固定baseUrl，不再重新计算
+          // 获取认证令牌
+          const token = getCookie("Authorization") || getCookie("Admin-Token");
+
+          // 添加每个结果项
+          rows.forEach((item) => {
+            const resultItem = document.createElement("div");
+            resultItem.className = "col-12 mb-4";
+
+            // 格式化日期
+            const publishDate = new Date(item.publishDateInstance);
+            const formattedDate =
+              publishDate.getFullYear() +
+              "-" +
+              String(publishDate.getMonth() + 1).padStart(2, "0") +
+              "-" +
+              String(publishDate.getDate()).padStart(2, "0");
+
+            // 生成正确的链接，包含令牌
+            const contentId = item.contentId;
+            const isPreview = window.top.location.href.includes('preview');
+            const item_href = isPreview 
+              ? `${baseUrl}?type=content&dataId=${contentId}&pp=pc`
+              : item.link;
+
+            // 处理空链接的情况
+            let linkHtml;
+            let moreLinkHtml;
+            const tooltipText = '该链接不可用。可能是文章尚未发布。';
+            
+            if (item_href && item_href !== "javascript:void(0);") {
+              linkHtml = `<a href="${item_href}" class="text-decoration-none text-dark fw-bold" target="_blank">${item.title || "无标题"}</a>`;
+              moreLinkHtml = `<a href="${item_href}" class="text-decoration-none fw-bold" style="color:#AD1E23;" target="_blank">查看更多 <i class="fas fa-arrow-right"></i></a>`;
+            } else {
+              linkHtml = `<a href="javascript:void(0)" class="text-decoration-none text-dark fw-bold" title="${tooltipText}">${item.title || "无标题"}</a>`;
+              moreLinkHtml = `<a href="javascript:void(0)" class="text-decoration-none fw-bold" style="color:#AD1E23;" title="${tooltipText}">查看更多 <i class="fas fa-arrow-right"></i></a>`;
+            }
+
+            // 创建结果项HTML
+            resultItem.innerHTML =
+              '<div class="card border-0 border-bottom rounded-0 pb-3 mb-3">' +
+              '<div class="row g-0">' +
+              '<div class="col-md-12">' +
+              '<div class="card-body px-0">' +
+              '<h5 class="card-title mb-3">' +
+              (item.topFlag > 0
+                ? '<span class="badge bg-danger me-2">置顶</span>'
+                : "") +
+              linkHtml +
+              "</h5>" +
+              '<p class="card-text text-muted mb-3">' +
+              (item.summary ||
+                (item.fullText
+                  ? item.fullText.replace(/<[^>]*>/g, "").substring(0, 150) +
+                    "..."
+                  : "无描述")) +
+              "</p>" +
+              '<div class="d-flex align-items-center text-muted small">' +
+              '<i class="far fa-user me-2"></i>' +
+              '<span class="me-3">' +
+              (item.author || "小编") +
+              "</span>" +
+              '<i class="far fa-calendar me-2"></i>' +
+              '<span class="me-3">' +
+              formattedDate +
+              "</span>" +
+              '<i class="far fa-eye me-2"></i>' +
+              "<span>" +
+              (item.viewCount || 0) +
+              "</span>" +
+              "</div>" +
+              '<p class="mt-2">' + moreLinkHtml + '</p>' +
+              "</div>" +
+              "</div>" +
+              "</div>" +
+              "</div>";
+
+            resultsContainer.appendChild(resultItem);
+          });
+        }
+
+        // 创建分页器
+        function createPagination(total, currentPageNum, keyword) {
+          // 检查paginationContainer是否存在
+          if (!paginationContainer) {
+            console.error("分页容器元素不存在");
+            return;
+          }
+          
+          // 确保total是数字
+          total = parseInt(total);
+          
+          const pageCount = Math.ceil(total / pageSize);
+          console.log("分页信息:", { total, pageSize, pageCount, currentPageNum });
+
+          if (pageCount <= 1) {
+            paginationContainer.innerHTML =
+              '<div class="text-secondary fs-6 ps-2 mt-2 text-center">' +
+              "共 1 页 " +
+              total +
+              " 条数据" +
+              "</div>";
+            return;
+          }
+
+          // 添加当前页码提示
+          let paginationHTML = 
+            '<div class="current-page-indicator">当前第 <span class="fw-bold" style="color: var(--primary-color); font-size: 1.2em;">' + 
+            currentPageNum + 
+            '</span> 页，共 ' + 
+            pageCount + 
+            ' 页</div>' +
+            '<nav aria-label="Page navigation">' +
+            '<ul class="pagination d-flex justify-content-center align-items-center m-1 flex-wrap">';
+
+          // 首页和上一页
+          if (currentPageNum > 1) {
+            paginationHTML +=
+              '<li class="page-item">' +
+              '<a class="page-link" href="javascript:void(0)" data-page="1">首页</a>' +
+              "</li>" +
+              '<li class="page-item">' +
+              '<a class="page-link" href="javascript:void(0)" data-page="' +
+              (currentPageNum - 1) +
+              '" aria-label="Previous">' +
+              '<span aria-hidden="true">&laquo;</span>' +
+              "</a>" +
+              "</li>";
+          }
+
+          // 页码 - 优化显示逻辑，当页数过多时只显示部分页码
+          const maxVisiblePages = 5; // 最多显示的页码数
+          let startPage = Math.max(1, currentPageNum - Math.floor(maxVisiblePages / 2));
+          let endPage = Math.min(pageCount, startPage + maxVisiblePages - 1);
+          
+          // 调整起始页，确保显示足够的页码
+          if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+          }
+          
+          // 添加第一页和省略号
+          if (startPage > 1) {
+            paginationHTML +=
+              '<li class="page-item">' +
+              '<a class="page-link" href="javascript:void(0)" data-page="1">1</a>' +
+              "</li>";
+            if (startPage > 2) {
+              paginationHTML += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+            }
+          }
+          
+          // 添加页码
+          for (let i = startPage; i <= endPage; i++) {
+            paginationHTML +=
+              '<li class="page-item m-1' +
+              (currentPageNum === i ? "active" : "") +
+              '">' +
+              '<a class="page-link" href="javascript:void(0)" data-page="' +
+              i +
+              '">' +
+              i +
+              "</a>" +
+              "</li>";
+          }
+          
+          // 添加省略号和最后一页
+          if (endPage < pageCount) {
+            if (endPage < pageCount - 1) {
+              paginationHTML += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+            }
+            paginationHTML +=
+              '<li class="page-item">' +
+              '<a class="page-link" href="javascript:void(0)" data-page="' +
+              pageCount +
+              '">' +
+              pageCount +
+              "</a>" +
+              "</li>";
+          }
+
+          // 下一页和尾页
+          if (currentPageNum < pageCount) {
+            paginationHTML +=
+              '<li class="page-item">' +
+              '<a class="page-link" href="javascript:void(0)" data-page="' +
+              (currentPageNum + 1) +
+              '" aria-label="Next">' +
+              '<span aria-hidden="true">&raquo;</span>' +
+              "</a>" +
+              "</li>" +
+              '<li class="page-item">' +
+              '<a class="page-link" href="javascript:void(0)" data-page="' +
+              pageCount +
+              '">尾页</a>' +
+              "</li>";
+          }
+
+          paginationHTML +=
+            "</ul>" +
+            "</nav>" +
+            '<div class="text-secondary fs-6 ps-2 mt-2 text-center">' +
+            "共 " +
+            pageCount +
+            " 页 " +
+            total +
+            " 条数据" +
+            "</div>";
+
+          paginationContainer.innerHTML = paginationHTML;
+          console.log("分页HTML已生成");
+
+          // 添加分页点击事件
+          const pageLinks = paginationContainer.querySelectorAll(".page-link");
+          if (pageLinks && pageLinks.length > 0) {
+            console.log("找到分页链接数量:", pageLinks.length);
+            pageLinks.forEach((link) => {
+              link.addEventListener("click", function (e) {
+                e.preventDefault();
+                const pageNum = parseInt(this.getAttribute("data-page"));
+                console.log("点击页码:", pageNum);
+                currentPage = pageNum;
+                fetchSearchResults(keyword, pageNum);
+                // 滚动到顶部
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              });
+            });
+          } else {
+            console.warn("未找到分页链接");
+          }
+        }
+        </#noparse>
+      });
+    </script>
+      <!-- 添加图片懒加载 -->
+    <script src="${Prefix}js/common_js_at_footer.js"></script>
+</body>
+</html> 
