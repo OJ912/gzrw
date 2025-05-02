@@ -1,6 +1,6 @@
 export default {
   APP: {
-    TITLE: "ChestnutCMS",
+    TITLE: "贵阳人文科技学院官网",
   },
   Common: {
     Search: "Search",
