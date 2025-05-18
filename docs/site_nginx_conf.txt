@@ -1,0 +1,60 @@
+server {
+    listen       80; #http默认监听80端口
+    server_name  localhost;
+    root    C:/gzmdrw_site_master/wwwroot_release/gzmdrw_pc;
+    index  index.shtml index.html; #如果请求路径对应一个目录，Nginx 会优先尝试加载目录下的 index.shtml
+
+    # 当访问根目录时直接重定向到index.shtml
+    location = / {
+        return 301 /index.shtml;
+    }
+
+    ssi on;  # 启用 SSI
+    ssi_types   text/shtml; # 仅对 .shtml 解析
+    ssi_silent_errors on;   # 包含文件缺失时不抛 500
+    access_log  logs/gzmdrw_access.log; #访问日志 main 或是combined是记录日志的模板名 combined是默认格式名，不用写就是用combined
+    error_log   logs/gzmdrw_error.log debug;
+
+    # 匹配顺序的最佳实践 精确匹配 前缀匹配 正则表达式匹配 通用匹配 相同的location块用最后那个
+
+    location / {
+        try_files $uri $uri/ /index.shtml;
+    }
+
+    # location /admin/ {
+    #     proxy_pass  http://127.0.0.1:8080/admin/login/;
+    #     proxy_set_header Host $host;
+    #     proxy_set_header X-Real-IP $remote_addr; #传递真实ip
+    #     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;  #传递代理链信息
+    # }
+
+    location /admin/ {
+        alias C:/gzmdrw_site_master/wwwroot_release/gzmdrw_ui/dist/;
+        try_files $uri $uri/ /admin/index.html;
+        index  index.html index.htm;
+    }
+
+    location /resources/ {
+        alias C:/gzmdrw_site_master/wwwroot_release/gzmdrw/resources/;
+    }
+
+    location /uploads/ {
+        alias C:/gzmdrw_site_master/wwwroot_release/gzmdrw/uploads/;
+    }
+
+    # 使用非正则表达式的location块分别处理dev-api和pro-api
+    location /dev-api/ {
+        proxy_pass  http://127.0.0.1:8090/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location /prod-api/ {
+        proxy_pass  http://localhost:8090/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+}

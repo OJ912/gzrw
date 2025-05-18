@@ -11,22 +11,25 @@ chestnut:
   system:
     # 演示模式开关
     demoMode: false
-    # 文件路径 示例（ Windows本地配置 "D:/dev/workspace_chestnut/uploadPath"，Linux官网的生产环境配置 /www/wwwroot/java/uploadPath）
-    uploadPath: "D:/dev/workspace_chestnut/uploadPath"
+    # 文件路径 示例（ Windows本地配置 "D:/dev/workspace_chestnut/uploadPath"，Linux官网的生产环境配置 /www/wwwroot/java/uploadPath， 冯服务器/opt/gzmdrw/wwwroot_release/backend_java/dev/workspace_chestnut/uploadPath）
+    uploadPath: "/opt/gzmdrw/wwwroot_release/backend_java/dev/workspace_chestnut/uploadPath"
     # 验证码类型 math 数组计算 char 字符验证
     captchaType: math
   freemarker:
-    #生产环境: /www/wwwroot/java/statics 本地windows开发环境: C:\gzmdrw_site_master\wwwroot_release
-    templateLoaderPath: C:\gzmdrw_site_master\wwwroot_release
+    #生产环境: /www/wwwroot/java/statics 本地windows开发环境: C:\gzmdrw_site_master\wwwroot_release 冯服务器/opt/gzmdrw/wwwroot_release
+    templateLoaderPath: "/opt/gzmdrw/wwwroot_release"
   cms:
-    #生产环境: /www/wwwroot/java/wwwroot_release 本地windows开发环境: C:\gzmdrw_site_master\wwwroot_release
-    resourceRoot: C:\gzmdrw_site_master\wwwroot_release
+    #生产环境: /www/wwwroot/java/wwwroot_release 本地windows开发环境: C:/gzmdrw_site_master/wwwroot_release 冯服务器/opt/gzmdrw/wwwroot_release
+    resourceRoot: "/opt/gzmdrw/wwwroot_release"
     publish:
       pool:
         threadNamePrefix: "CMS-PUBLISH-"
         queueCapacity: 10000
         coreSize: 2
         maxSize: 4
+        #本地windows开发环境 "D:/dev/workspace_chestnut/_xy_member"   冯服务器/opt/gzmdrw/wwwroot_release/backend_java/dev/workspace_chestnut/_xy_member
+  # member:
+  #   uploadPath: "/opt/gzmdrw/wwwroot_release/backend_java/dev/workspace_chestnut/_xy_member"
 
 # 开发环境配置
 server:
@@ -128,16 +131,18 @@ spring:
           driverClassName: com.mysql.cj.jdbc.Driver
           url: jdbc:mysql://127.0.0.1:3306/chestnut_cms?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
           username: root
-          # 生产环境下：rwkj123456 windows本地：5Secsgo100
-          password: 5Secsgo100
-        # 从库
-        # slave:
-        #  lazy: true
-        #  type: ${spring.datasource.type}
-        #  driverClassName: com.mysql.cj.jdbc.Driver
-        #  url: jdbc:mysql://localhost:3306/ry-vue?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
-        #  username:
-        #  password:
+          # 生产环境下：rwkj123456 windows本地：5Secsgo100 冯的实验服务器!Rabid123
+          password: !Rabid123
+            # 从库
+            # slave:
+            #  lazy: true
+            #  type: ${spring.datasource.type}
+            #  driverClassName: com.mysql.cj.jdbc.Driver
+            #  url: jdbc:mysql://localhost:3306/ry-vue?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
+            #  username:
+            #  password:
+
+
     hikari:
       # 连接池名
       pool-name: HikariCP
@@ -178,7 +183,7 @@ spring:
             required: true
   # 监控配置
   # 注意，健康检查需要配置，如果检查失败，检查本身不影响启动
-  health: 
+  health:
     mail:
       enabled: false
     elasticsearch:
