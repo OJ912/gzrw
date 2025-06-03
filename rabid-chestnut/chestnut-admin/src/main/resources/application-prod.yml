@@ -12,15 +12,15 @@ chestnut:
     # 演示模式开关
     demoMode: false
     # 文件路径 示例（ Windows本地配置 "D:/dev/workspace_chestnut/uploadPath"，Linux官网的生产环境配置 /www/wwwroot/java/uploadPath， 冯服务器/opt/gzmdrw/wwwroot_release/backend_java/dev/workspace_chestnut/uploadPath）
-    uploadPath: "/opt/gzmdrw/wwwroot_release/backend_java/dev/workspace_chestnut/uploadPath"
+    uploadPath: "D:/dev/workspace_chestnut/uploadPath"
     # 验证码类型 math 数组计算 char 字符验证
     captchaType: math
   freemarker:
-    #生产环境: /www/wwwroot/java/statics 本地windows开发环境: C:\gzmdrw_site_master\wwwroot_release 冯服务器/opt/gzmdrw/wwwroot_release
-    templateLoaderPath: "/opt/gzmdrw/wwwroot_release"
+    #生产环境: /www/wwwroot/java/statics 本地windows开发环境: C:/gzmdrw_site_master/wwwroot_release 冯服务器/opt/gzmdrw/wwwroot_release
+    templateLoaderPath: "C:/gzmdrw_site_master/wwwroot_release"
   cms:
     #生产环境: /www/wwwroot/java/wwwroot_release 本地windows开发环境: C:/gzmdrw_site_master/wwwroot_release 冯服务器/opt/gzmdrw/wwwroot_release
-    resourceRoot: "/opt/gzmdrw/wwwroot_release"
+    resourceRoot: "C:/gzmdrw_site_master/wwwroot_release"
     publish:
       pool:
         threadNamePrefix: "CMS-PUBLISH-"
@@ -78,8 +78,8 @@ spring:
   elasticsearch:
     uris: http://127.0.0.1:9200
     # windows本地注释掉下面两行，在生产环境取消注释
-    # username: elastic
-    # password: rwkj123456
+    #  username: elastic
+    #  password: rwkj123456
   # redis 配置
   data:
     redis:
@@ -132,7 +132,8 @@ spring:
           url: jdbc:mysql://127.0.0.1:3306/chestnut_cms?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
           username: root
           # 生产环境下：rwkj123456 windows本地：5Secsgo100 冯的实验服务器!Rabid123
-          password: !Rabid123
+          password:
+            "5Secsgo100"
             # 从库
             # slave:
             #  lazy: true
@@ -141,7 +142,6 @@ spring:
             #  url: jdbc:mysql://localhost:3306/ry-vue?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true
             #  username:
             #  password:
-
 
     hikari:
       # 连接池名
@@ -202,6 +202,13 @@ spring:
         username: chestnut
         password: 123456
 
+# Actuator Management Endpoints Configuration
+management:
+  endpoints:
+    web:
+      enabled-by-default: false
+      exposure:
+        include: "" # Disable all HTTP Actuator endpoints
 # SaToken配置
 sa-token:
   # token名称 (同时也是cookie名称)
@@ -241,7 +248,7 @@ xxl:
   job:
     enable: false
     accessToken: default_token
-    adminAddresses: http://127.0.0.1:18080/xxl-job-admin
+    adminAddresses: http://127.0.0.1:1:8080/xxl-job-admin
     executor:
       ### 执行器AppName [选填]：执行器心跳注册分组依据；为空则关闭自动注册
       appname: chestnut-admin
