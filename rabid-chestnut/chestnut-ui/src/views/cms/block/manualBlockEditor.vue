@@ -2,7 +2,7 @@
   <div class="app-container block-manual-container">
       <el-row :gutter="10" class="mb12">
         <el-col :span="1.5">
-          <el-button 
+          <el-button
             plain
             type="success"
             icon="el-icon-edit"
@@ -11,7 +11,7 @@
             @click="handleSave">{{ $t("Common.Save") }}</el-button>
         </el-col>
         <el-col :span="1.5">
-          <el-button 
+          <el-button
             plain
             type="primary"
             icon="el-icon-s-promotion"
@@ -20,23 +20,15 @@
             @click="handlePublish">{{ $t('CMS.ContentCore.Publish') }}</el-button>
         </el-col>
         <el-col :span="1.5">
-          <el-button 
+          <el-button
             plain
             type="primary"
             icon="el-icon-view"
             size="mini"
             @click="handlePreview">{{ $t('CMS.ContentCore.Preview') }}</el-button>
         </el-col>
-        <el-col :span="1.5">
-          <el-button 
-            plain
-            type="info"
-            icon="el-icon-back"
-            size="mini"
-            @click="handleGoBack">{{ $t('Common.GoBack') }}</el-button>
-        </el-col>
       </el-row>
-    <el-form 
+    <el-form
       ref="form"
       :model="form"
       :rules="rules"
@@ -67,7 +59,7 @@
           </el-form-item>
           <el-form-item :label="$t('CMS.PageWidget.Template')" prop="template">
             <el-input v-model="form.template" :disabled="templateDisabled" >
-            <el-button 
+            <el-button
               slot="append"
               type="primary"
               :disabled="templateDisabled"
@@ -91,9 +83,9 @@
         <el-table-column :label="$t('CMS.Block.Title')" prop="title">
           <template slot-scope="scope">
             <span class="row-insert">
-              <el-button 
-                icon="el-icon-plus" 
-                circle 
+              <el-button
+                icon="el-icon-plus"
+                circle
                 size="mini"
                 @click="handleAddItem(scope.$index)">
               </el-button>
@@ -107,16 +99,16 @@
                 v-for="(item, index) in scope.row.items">
                 <el-link :underline="false" @click="handleEditItem(scope.$index, index)">{{item.title}}</el-link>
                 <span class="item-op">
-                  <el-link 
+                  <el-link
                     class="item-op-add"
-                    :underline="false" 
-                    icon="el-icon-circle-plus-outline" 
+                    :underline="false"
+                    icon="el-icon-circle-plus-outline"
                     @click="handleAddItem(scope.$index, index + 1)">
                   </el-link>
-                  <el-link 
+                  <el-link
                     class="item-op-del"
-                    :underline="false" 
-                    icon="el-icon-circle-close" 
+                    :underline="false"
+                    icon="el-icon-circle-close"
                     @click="handleDeleteItem(scope.$index, index)">
                   </el-link>
                 </span>
@@ -156,13 +148,13 @@
       </el-table>
     </el-card>
     <!-- 链接编辑弹窗 -->
-    <el-dialog 
+    <el-dialog
       :title="title"
       :visible.sync="dialogVisible"
       :close-on-click-modal="false"
       width="600px"
       append-to-body>
-      <el-form 
+      <el-form
         ref="form_item"
         :model="form_item"
         label-width="80px"
@@ -206,8 +198,8 @@
       </div>
     </el-dialog>
     <!-- 模板选择组件 -->
-    <cms-template-selector 
-      :open="openTemplateSelector" 
+    <cms-template-selector
+      :open="openTemplateSelector"
       :publishPipeCode="form.publishPipeCode"
       @ok="handleTemplateSelected"
       @cancel="handleTemplateSelectorCancel" />
@@ -295,23 +287,52 @@ export default {
     loadPageWidgetInfo() {
       getPageWidget(this.pageWidgetId).then(response => {
         this.form = response.data;
+        
+        // 确保内容数据被正确解析
+        if (this.form.contentStr && (!this.form.content || this.form.content.length === 0)) {
+          try {
+            this.form.content = JSON.parse(this.form.contentStr);
+          } catch (e) {
+            console.error('解析内容数据失败:', e);
+            this.form.content = [];
+          }
+        }
+        
+        // 确保每行都有 items 数组
+        if (this.form.content) {
+          this.form.content.forEach(row => {
+            if (!row.items) {
+              row.items = [];
+            }
+          });
+        } else {
+          this.form.content = [];
+        }
+        
         this.initDataStr = JSON.stringify(this.form);
       });
     },
     isFormChanged() {
       return JSON.stringify(this.form) != this.initDataStr;
     },
-    handleSave () {
+    handleSave() {
       this.$refs["form"].validate(valid => {
         if (valid) {
           this.form.catalogId = this.catalogId;
-          this.form.contentStr = JSON.stringify(this.form.content);
+          
+          // 确保内容数据被正确序列化
+          // 深拷贝内容数据，以避免引用问题
+          const contentCopy = JSON.parse(JSON.stringify(this.form.content));
+          
+          // 序列化内容数据
+          this.form.contentStr = JSON.stringify(contentCopy);
+          
           if (this.pageWidgetId) {
             editPageWidget(this.form).then(response => {
               this.$modal.msgSuccess(this.$t('Common.SaveSuccess'));
               this.initDataStr = JSON.stringify(this.form);
               if (this.publishAfterSave) {
-                this.publishAfterSave = false
+                this.publishAfterSave = false;
                 this.handlePublish();
               }
             });
@@ -365,13 +386,61 @@ export default {
       this.addItem = true;
       this.dialogVisible = true;
     },
-    handleDialogOk() {
-      if (this.addItem) {
-        this.form.content[this.current.row].items.splice(this.current.col, 0, this.form_item);
-      } else {
-        this.$set(this.form.content[this.current.row].items, this.current.col, this.form_item);
+    /**
+     * 将内部链接转换为预览链接
+     * @param {string} internalUrl 内部链接格式如 iurl://content?id=123
+     * @returns {string} 预览链接
+     */
+    convertInternalUrlToPreview(internalUrl) {
+      if (!internalUrl || !internalUrl.startsWith('iurl://')) {
+        return internalUrl;
       }
+      
+      // 解析内部链接格式 iurl://content?id=123
+      const typeMatch = internalUrl.match(/iurl:\/\/([^?]+)/);
+      const idMatch = internalUrl.match(/id=([^&]+)/);
+      
+      if (typeMatch && idMatch) {
+        const type = typeMatch[1];  // 例如 "content"
+        const dataId = idMatch[1];  // 例如 "123"
+        
+        // 使用路由系统生成预览链接
+        let routeData = this.$router.resolve({
+          path: "/cms/preview",
+          query: { 
+            type: type, 
+            dataId: dataId 
+          },
+        });
+        return routeData.href;
+      }
+      
+      return internalUrl;
+    },
+    handleDialogOk() {
+      // 如果有内部链接，优先使用内部链接
+      if (this.form_item.internalUrl) {
+        this.form_item.url = this.form_item.internalUrl;
+      }
+      
+      // 确保行和列存在
+      if (!this.form.content[this.current.row]) {
+        this.$set(this.form.content, this.current.row, { items: [] });
+      }
+      
+      if (this.addItem) {
+        // 添加新项
+        this.form.content[this.current.row].items.splice(this.current.col, 0, { ...this.form_item });
+      } else {
+        // 更新现有项
+        this.$set(this.form.content[this.current.row].items, this.current.col, { ...this.form_item });
+      }
+      
+      // 关闭对话框
       this.dialogVisible = false;
+      
+      // 强制更新视图
+      this.$forceUpdate();
     },
     handleDialogClose() {
       this.dialogVisible = false;
@@ -398,44 +467,56 @@ export default {
     },
     handleContentSelectorOk(contents) {
       if (contents && contents.length > 0) {
+        // 获取内部链接
+        const internalUrl = contents[0].internalUrl || '';
+        
+        // 生成预览链接
+        const previewUrl = this.convertInternalUrlToPreview(internalUrl);
+        
+        // 更新表单项
         this.form_item = {
           title: contents[0].title,
-          logo: contents[0].logo || '',
-          logoSrc: contents[0].logoSrc || '',
+          logo: this.form_item.logo || contents[0].logo || '',
+          logoSrc: this.form_item.logoSrc || contents[0].logoSrc || '',
           publishDate: contents[0].publishDate || '',
-          url: contents[0].internalUrl || '',
+          url: previewUrl,
+          internalUrl: previewUrl,
           summary: contents[0].summary || ''
-        }
+        };
+        
         this.openContentSelector = false;
       } else {
         this.$modal.msgWarning(this.$t('Common.SelectFirst'));
       }
-      console.log(this.form_item)
     },
     handleContentSelectorClose() {
       this.openContentSelector = false;
     },
     handleCatalogSelectorOk(catalogs) {
       if (catalogs && catalogs.length > 0) {
+        // 获取内部链接
+        const internalUrl = catalogs[0].props.internalUrl || '';
+        
+        // 生成预览链接
+        const previewUrl = this.convertInternalUrlToPreview(internalUrl);
+        
+        // 更新表单项
         this.form_item = {
           title: catalogs[0].name,
-          logo: catalogs[0].props.logo || '',
-          logoSrc: catalogs[0].props.logoSrc || '',
+          logo: this.form_item.logo || catalogs[0].props.logo || '',
+          logoSrc: this.form_item.logoSrc || catalogs[0].props.logoSrc || '',
           publishDate: '',
-          url: catalogs[0].props.internalUrl || '',
+          url: previewUrl,
+          internalUrl: previewUrl,
           summary: catalogs[0].props.description || ''
-        }
+        };
+        
+        this.openCatalogSelector = false;
       }
-      console.log(this.form_item)
-      this.openCatalogSelector = false;
     },
     handleCatalogSelectorClose() {
       this.openCatalogSelector = false;
-    },
-    handleGoBack() {
-      const obj = { name: "Content", params: { tab: "pageWdiget" } };
-      this.$tab.closeOpenPage(obj);
-    },
+    }
   }
 };
 </script>
@@ -472,3 +553,12 @@ export default {
   float: left;
 }
 </style>
+
+
+
+
+
+
+
+
+
